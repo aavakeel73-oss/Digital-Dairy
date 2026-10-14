@@ -384,7 +384,7 @@
     <div id="view-dashboard" class="view-panel active">
       <div style="margin-bottom: 16px;">
         <h1 style="font-size: 1.4rem; font-weight: 700;" id="greeting-text">Welcome to your Diary</h1>
-        <p style="font-size: 0.8rem; color: var(--text-muted);" id="today-date-text">Tuesday, 13 Oct 2026 · 100% Offline LocalStorage</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);" id="today-date-text">Tuesday, 13 Oct 2026 · Local Storage + Optional Cloud Sync</p>
       </div>
 
       <!-- Stats Grid -->
@@ -818,6 +818,8 @@
     }
     function setStorage(key, value) {
       try { localStorage.setItem('chr_' + key, JSON.stringify(value)); } catch (err) {}
+      // Notify the Firebase module when diary data changes. Local saving still works offline.
+      try { window.dispatchEvent(new CustomEvent('chronicle-local-data-changed', { detail: { key: key } })); } catch (err) {}
     }
 
     var journals = getStorage('journals', INITIAL_JOURNALS);
@@ -953,7 +955,7 @@
     function renderDashboard() {
       var todayIso = new Date().toISOString().split('T')[0];
       var todayFormatted = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-      document.getElementById('today-date-text').textContent = todayFormatted + ' · 100% Offline LocalStorage';
+      document.getElementById('today-date-text').textContent = todayFormatted + ' · Local Storage + Optional Cloud Sync';
 
       var totalWords = journals.reduce(function(a, b) {
         return a + (b.content ? b.content.split(/\s+/).filter(Boolean).length : 0);
@@ -1573,12 +1575,15 @@
 
 
 
-  <!-- FIREBASE GOOGLE SIGN-IN: added without changing local diary storage -->
+  <!-- FIREBASE GOOGLE SIGN-IN + FIRESTORE CLOUD SYNC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import {
       getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCv9tWc183pssCDUinQWLwue02skrPB1CE",
@@ -1593,13 +1598,72 @@
 
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
+    const db = getFirestore(firebaseApp);
     const googleProvider = new GoogleAuthProvider();
     const loginButton = document.getElementById("google-login-btn");
     const userStatus = document.getElementById("google-user-status");
+    let activeUid = null;
+    let syncReady = false;
+    let syncQueue = Promise.resolve();
+
+    // One private document per Google account. PIN and recovery-answer data are never uploaded.
+    function userDataRef(uid) {
+      return doc(db, "users", uid, "entries", "appData");
+    }
+
+    function safeArray(value) {
+      return Array.isArray(value) ? value : [];
+    }
+
+    // Keep all cloud items, then let this device's copy win when the same ID exists.
+    function mergeById(cloudItems, localItems) {
+      const map = new Map();
+      safeArray(cloudItems).forEach(item => { if (item && item.id != null) map.set(String(item.id), item); });
+      safeArray(localItems).forEach(item => { if (item && item.id != null) map.set(String(item.id), item); });
+      return Array.from(map.values()).sort((a, b) => Number(b.timestamp || b.updatedAt || 0) - Number(a.timestamp || a.updatedAt || 0));
+    }
+
+    function localSnapshot() {
+      const settings = window.settings || {};
+      return {
+        journals: safeArray(window.journals),
+        notes: safeArray(window.notes),
+        reminders: safeArray(window.reminders),
+        // Sync preferences only; keep PIN, PIN hash, and recovery answer on this device.
+        preferences: {
+          theme: settings.theme || "light",
+          fontFamily: settings.fontFamily || "sans",
+          dailyReminderTime: settings.dailyReminderTime || "20:30"
+        }
+      };
+    }
+
+    async function writeSnapshot(uid) {
+      if (!uid || uid !== activeUid || !syncReady) return;
+      const snapshot = localSnapshot();
+      // Serialize writes so rapid edits do not finish out of order.
+      syncQueue = syncQueue.then(async () => {
+        if (uid !== activeUid || !syncReady) return;
+        await setDoc(userDataRef(uid), { ...snapshot, updatedAt: serverTimestamp() });
+        if (uid === activeUid && userStatus) userStatus.textContent = "Cloud synced";
+      });
+      try {
+        await syncQueue;
+      } catch (error) {
+        console.error("Firestore sync error:", error);
+        if (uid === activeUid && userStatus) userStatus.textContent = "Sync failed";
+        alert("Cloud Sync नहीं हो पाया: " + (error.message || "Firebase Rules और इंटरनेट जाँचें।"));
+      }
+    }
+
+    window.addEventListener("chronicle-local-data-changed", () => {
+      if (activeUid && syncReady) writeSnapshot(activeUid);
+    });
 
     window.chronicleGoogleLogin = async function () {
       try {
         if (auth.currentUser) {
+          syncReady = false;
           await signOut(auth);
         } else {
           await signInWithPopup(auth, googleProvider);
@@ -1610,16 +1674,45 @@
       }
     };
 
-    onAuthStateChanged(auth, function (user) {
-      if (!loginButton || !userStatus) return;
-      if (user) {
-        loginButton.textContent = "🚪 Logout";
-        userStatus.textContent = user.displayName || user.email || "Signed in";
-        userStatus.title = user.email || "";
-      } else {
-        loginButton.textContent = "🔐 Google Login";
-        userStatus.textContent = "";
-        userStatus.removeAttribute("title");
+    onAuthStateChanged(auth, async function (user) {
+      syncReady = false;
+      activeUid = user ? user.uid : null;
+      if (loginButton) loginButton.textContent = user ? "🚪 Logout" : "🔐 Google Login";
+      if (userStatus) {
+        userStatus.textContent = user ? "Loading cloud…" : "";
+        userStatus.title = user ? (user.email || "") : "";
+      }
+      if (!user) return;
+
+      try {
+        const snap = await getDoc(userDataRef(user.uid));
+        // Ignore a late response if the account changed while the request was running.
+        if (activeUid !== user.uid) return;
+        const cloud = snap.exists() ? snap.data() : {};
+        const local = localSnapshot();
+
+        window.journals = mergeById(cloud.journals, local.journals);
+        window.notes = mergeById(cloud.notes, local.notes);
+        window.reminders = mergeById(cloud.reminders, local.reminders);
+        window.settings = Object.assign({}, window.settings || {}, cloud.preferences || {});
+
+        localStorage.setItem("chr_journals", JSON.stringify(window.journals));
+        localStorage.setItem("chr_notes", JSON.stringify(window.notes));
+        localStorage.setItem("chr_reminders", JSON.stringify(window.reminders));
+        localStorage.setItem("chr_settings", JSON.stringify(window.settings));
+
+        if (typeof window.renderDashboard === "function") window.renderDashboard();
+        if (typeof window.renderJournalView === "function") window.renderJournalView();
+        if (typeof window.renderNotesView === "function") window.renderNotesView();
+        if (typeof window.renderRemindersView === "function") window.renderRemindersView();
+        if (typeof window.renderSettingsView === "function") window.renderSettingsView();
+
+        syncReady = true;
+        await writeSnapshot(user.uid); // first sign-in uploads local data; later sign-ins merge first
+      } catch (error) {
+        console.error("Cloud load error:", error);
+        if (userStatus) userStatus.textContent = "Sync failed";
+        alert("Cloud data लोड नहीं हुआ: " + (error.message || "इंटरनेट और Firestore Rules जाँचें।"));
       }
     });
   </script>
