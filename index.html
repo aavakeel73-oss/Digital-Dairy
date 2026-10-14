@@ -371,6 +371,8 @@
     <div class="header-actions">
       <button class="btn btn-sm" onclick="downloadThisAppFile()" title="Download index.html file">⬇ Download File</button>
       <button class="btn btn-sm" onclick="openSearchModal()">🔍 Search</button>
+      <button class="btn btn-sm" id="google-login-btn" type="button" onclick="window.chronicleGoogleLogin && window.chronicleGoogleLogin()">🔐 Google Login</button>
+      <span id="google-user-status" style="font-size:0.72rem;color:var(--text-muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" aria-live="polite"></span>
       <button class="btn btn-sm btn-primary" onclick="openEditorModal()">+ Write</button>
     </div>
   </header>
@@ -1569,5 +1571,57 @@
     renderDashboard();
   </script>
 
+
+
+  <!-- FIREBASE GOOGLE SIGN-IN: added without changing local diary storage -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCv9tWc183pssCDUinQWLwue02skrPB1CE",
+      authDomain: "digital-dairy-922a8.firebaseapp.com",
+      databaseURL: "https://digital-dairy-922a8-default-rtdb.firebaseio.com",
+      projectId: "digital-dairy-922a8",
+      storageBucket: "digital-dairy-922a8.firebasestorage.app",
+      messagingSenderId: "123517202916",
+      appId: "1:123517202916:web:697075fcfa02aeb9be97f1",
+      measurementId: "G-GHRLWCNVPG"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const googleProvider = new GoogleAuthProvider();
+    const loginButton = document.getElementById("google-login-btn");
+    const userStatus = document.getElementById("google-user-status");
+
+    window.chronicleGoogleLogin = async function () {
+      try {
+        if (auth.currentUser) {
+          await signOut(auth);
+        } else {
+          await signInWithPopup(auth, googleProvider);
+        }
+      } catch (error) {
+        console.error("Google sign-in error:", error);
+        alert("Google Login नहीं हो पाया: " + (error.message || "कृपया Firebase सेटिंग जाँचें।"));
+      }
+    };
+
+    onAuthStateChanged(auth, function (user) {
+      if (!loginButton || !userStatus) return;
+      if (user) {
+        loginButton.textContent = "🚪 Logout";
+        userStatus.textContent = user.displayName || user.email || "Signed in";
+        userStatus.title = user.email || "";
+      } else {
+        loginButton.textContent = "🔐 Google Login";
+        userStatus.textContent = "";
+        userStatus.removeAttribute("title");
+      }
+    });
+  </script>
 
 </body></html>
