@@ -1579,7 +1579,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+      getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc, serverTimestamp
@@ -1660,19 +1660,37 @@
       if (activeUid && syncReady) writeSnapshot(activeUid);
     });
 
+    let loginRequestInProgress = false;
     window.chronicleGoogleLogin = async function () {
+      // Prevent rapid/double taps from starting overlapping authentication requests.
+      if (loginRequestInProgress) return;
+      loginRequestInProgress = true;
+      if (loginButton) loginButton.disabled = true;
       try {
         if (auth.currentUser) {
           syncReady = false;
           await signOut(auth);
         } else {
-          await signInWithPopup(auth, googleProvider);
+          // Redirect sign-in is more reliable than popups in mobile browsers.
+          await signInWithRedirect(auth, googleProvider);
+          return; // The browser navigates away for Google's sign-in flow.
         }
       } catch (error) {
         console.error("Google sign-in error:", error);
         alert("Google Login नहीं हो पाया: " + (error.message || "कृपया Firebase सेटिंग जाँचें।"));
+      } finally {
+        loginRequestInProgress = false;
+        if (loginButton) loginButton.disabled = false;
       }
     };
+
+    // Complete a redirect sign-in when Google sends the browser back to this page.
+    getRedirectResult(auth).catch(function (error) {
+      console.error("Google redirect result error:", error);
+      if (error && error.code) {
+        alert("Google Login नहीं हो पाया: " + error.message);
+      }
+    });
 
     onAuthStateChanged(auth, async function (user) {
       syncReady = false;
