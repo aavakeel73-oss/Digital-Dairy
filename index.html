@@ -1596,9 +1596,11 @@
       <input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com">
       <label for="auth-password">पासवर्ड</label>
       <input id="auth-password" type="password" autocomplete="current-password" placeholder="कम से कम 6 अक्षर">
+      <label for="auth-password-confirm">पासवर्ड दोबारा लिखें (केवल नए अकाउंट के लिए)</label>
+      <input id="auth-password-confirm" type="password" autocomplete="new-password" placeholder="पासवर्ड की पुष्टि करें">
       <div class="auth-actions">
         <button class="auth-primary" type="button" id="auth-email-login">Email Login</button>
-        <button class="auth-secondary" type="button" id="auth-email-create">नया अकाउंट बनाएँ</button>
+        <button class="auth-primary" type="button" id="auth-email-create">नया अकाउंट बनाएँ</button>
       </div>
       <hr style="margin:14px 0;">
       <label for="auth-phone">फोन नंबर (देश कोड सहित, जैसे +91XXXXXXXXXX)</label>
@@ -1786,11 +1788,18 @@
       }
     });
 
+    let emailCreateInProgress = false;
     document.getElementById("auth-email-create")?.addEventListener("click", async () => {
       const email = document.getElementById("auth-email").value.trim();
       const password = document.getElementById("auth-password").value;
-      if (!email || !password) return setAuthMessage("ईमेल और पासवर्ड भरें।", true);
+      const confirmPassword = document.getElementById("auth-password-confirm").value;
+      const createButton = document.getElementById("auth-email-create");
+      if (emailCreateInProgress) return;
+      if (!email || !password || !confirmPassword) return setAuthMessage("ईमेल, पासवर्ड और पासवर्ड की पुष्टि भरें।", true);
       if (password.length < 6) return setAuthMessage("पासवर्ड कम से कम 6 अक्षर का रखें।", true);
+      if (password !== confirmPassword) return setAuthMessage("दोनों पासवर्ड एक जैसे नहीं हैं।", true);
+      emailCreateInProgress = true;
+      if (createButton) { createButton.disabled = true; createButton.textContent = "अकाउंट बनाया जा रहा है…"; }
       try {
         await persistenceReady;
         await createUserWithEmailAndPassword(auth, email, password);
@@ -1799,10 +1808,13 @@
       } catch (error) {
         console.error("Email account creation error:", error);
         setAuthMessage(error.code === "auth/email-already-in-use"
-          ? "यह ईमेल पहले से पंजीकृत है। Email Login दबाएँ।"
+          ? "यह ईमेल पहले से पंजीकृत है। नया अकाउंट बनाने के लिए दूसरी ईमेल दें या Email Login दबाएँ।"
           : error.code === "auth/operation-not-allowed"
           ? "Firebase Console में Email/Password provider चालू करें।"
           : (error.message || "अकाउंट नहीं बना।"), true);
+      } finally {
+        emailCreateInProgress = false;
+        if (createButton) { createButton.disabled = false; createButton.textContent = "नया अकाउंट बनाएँ"; }
       }
     });
 
