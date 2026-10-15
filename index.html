@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en"><head>
   <meta charset="UTF-8">
@@ -330,7 +329,8 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script></head>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script>
+</head>
 <body data-theme="light" data-font="sans">
 
   <!-- PIN LOCK SCREEN -->
@@ -434,7 +434,7 @@
         <h2 style="font-size: 1.05rem; font-weight: 700;">Recent Journals</h2>
         <button class="btn btn-sm" onclick="switchView('journal')">View All</button>
       </div>
-      <div id="dashboard-recent-feed"><div class="card" style="cursor: pointer;"><div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;"><h3 style="font-size: 0.95rem; font-weight: 700;">Welcome to Chronicle</h3><button class="btn btn-sm" onclick="event.stopPropagation(); copyEntryById('ent-1')">Copy</button></div><div class="meta-line"><span>2026-10-13</span><span class="meta-sep">·</span><span>09:00</span><span class="meta-sep">·</span><span>radiant</span></div><p class="entry-snippet">This is your private, offline digital diary. Every word and thought you write is stored directly on your device. You can format text, filter by mood, track streaks, and set reminders.</p></div></div>
+      <div id="dashboard-recent-feed"></div>
     </div>
 
     <!-- 2. JOURNAL VIEW -->
@@ -503,4 +503,19 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 700;">Daily Journaling Ritual</h3>
-            <p s
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Evening nudge to write your memories</p>
+          </div>
+          <input type="time" id="daily-ritual-time" value="20:30" onchange="saveDailyRitualTime()" style="width: 100px; margin: 0;">
+        </div>
+      </div>
+
+      <div id="reminders-feed"></div>
+    </div>
+
+    <!-- 6. SETTINGS VIEW -->
+    <div id="view-settings" class="view-panel">
+      <h1 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 14px;">Settings &amp; Backup</h1>
+
+      <!-- Download & Copy Standalone Code -->
+      <div class="card" style="border: 2px solid var(--accent); background: var(--accent-soft);">
+        <h3 style="font-size: 1rem; font-wei
