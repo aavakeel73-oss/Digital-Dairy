@@ -1708,11 +1708,23 @@
         if (activeUid !== user.uid) return;
         const cloud = snap.exists() ? snap.data() : {};
         const local = localSnapshot();
+        // IMPORTANT: never merge this browser's shared localStorage into an account
+        // that already has cloud data. Otherwise Account B inherits Account A's entries.
+        // Import legacy local data only once, for the first account on this browser.
+        const migrationKey = "chronicle_legacy_local_import_done";
+        const mayImportLegacyLocal = !snap.exists() && localStorage.getItem(migrationKey) !== "yes";
 
-        window.journals = mergeById(cloud.journals, local.journals);
-        window.notes = mergeById(cloud.notes, local.notes);
-        window.reminders = mergeById(cloud.reminders, local.reminders);
+        window.journals = snap.exists()
+          ? safeArray(cloud.journals)
+          : (mayImportLegacyLocal ? safeArray(local.journals) : []);
+        window.notes = snap.exists()
+          ? safeArray(cloud.notes)
+          : (mayImportLegacyLocal ? safeArray(local.notes) : []);
+        window.reminders = snap.exists()
+          ? safeArray(cloud.reminders)
+          : (mayImportLegacyLocal ? safeArray(local.reminders) : []);
         window.settings = Object.assign({}, window.settings || {}, cloud.preferences || {});
+        if (mayImportLegacyLocal) localStorage.setItem(migrationKey, "yes");
 
         localStorage.setItem("chr_journals", JSON.stringify(window.journals));
         localStorage.setItem("chr_notes", JSON.stringify(window.notes));
