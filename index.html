@@ -1707,24 +1707,15 @@
         // Ignore a late response if the account changed while the request was running.
         if (activeUid !== user.uid) return;
         const cloud = snap.exists() ? snap.data() : {};
-        const local = localSnapshot();
-        // IMPORTANT: never merge this browser's shared localStorage into an account
-        // that already has cloud data. Otherwise Account B inherits Account A's entries.
-        // Import legacy local data only once, for the first account on this browser.
-        const migrationKey = "chronicle_legacy_local_import_done";
-        const mayImportLegacyLocal = !snap.exists() && localStorage.getItem(migrationKey) !== "yes";
-
-        window.journals = snap.exists()
-          ? safeArray(cloud.journals)
-          : (mayImportLegacyLocal ? safeArray(local.journals) : []);
-        window.notes = snap.exists()
-          ? safeArray(cloud.notes)
-          : (mayImportLegacyLocal ? safeArray(local.notes) : []);
-        window.reminders = snap.exists()
-          ? safeArray(cloud.reminders)
-          : (mayImportLegacyLocal ? safeArray(local.reminders) : []);
+        // STRICT ACCOUNT ISOLATION:
+        // Never import shared browser localStorage into a Google account. The same
+        // browser storage is visible after switching accounts, so importing it can
+        // copy Account A's private entries into Account B's cloud document.
+        // Each account starts from its own Firestore document; if none exists, start empty.
+        window.journals = safeArray(cloud.journals);
+        window.notes = safeArray(cloud.notes);
+        window.reminders = safeArray(cloud.reminders);
         window.settings = Object.assign({}, window.settings || {}, cloud.preferences || {});
-        if (mayImportLegacyLocal) localStorage.setItem(migrationKey, "yes");
 
         localStorage.setItem("chr_journals", JSON.stringify(window.journals));
         localStorage.setItem("chr_notes", JSON.stringify(window.notes));
@@ -1738,7 +1729,7 @@
         if (typeof window.renderSettingsView === "function") window.renderSettingsView();
 
         syncReady = true;
-        await writeSnapshot(user.uid); // first sign-in uploads local data; later sign-ins merge first
+        await writeSnapshot(user.uid); // save only this account's loaded cloud data
       } catch (error) {
         console.error("Cloud load error:", error);
         if (userStatus) userStatus.textContent = "Sync failed";
