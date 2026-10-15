@@ -1591,17 +1591,26 @@
   <div id="account-auth-panel" role="dialog" aria-modal="true" aria-labelledby="account-auth-title">
     <div class="auth-card">
       <h2 id="account-auth-title" style="margin:0 0 8px;">Account Login</h2>
-      <p style="font-size:13px;margin:0 0 14px;">ईमेल-पासवर्ड से लॉगिन/नया अकाउंट या फोन पर OTP से लॉगिन करें।</p>
+      <p style="font-size:13px;margin:0 0 14px;">लॉगिन और नया अकाउंट बनाने के लिए अलग विकल्प चुनें।</p>
+      <div class="auth-actions" style="margin-bottom:16px;">
+        <button class="auth-primary" type="button" id="auth-mode-login" aria-pressed="true">Login / लॉगिन</button>
+        <button class="auth-secondary" type="button" id="auth-mode-signup" aria-pressed="false">Sign Up / नया अकाउंट</button>
+      </div>
       <label for="auth-email">ईमेल</label>
       <input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com">
       <label for="auth-password">पासवर्ड</label>
       <input id="auth-password" type="password" autocomplete="current-password" placeholder="कम से कम 6 अक्षर">
-      <label for="auth-password-confirm">पासवर्ड दोबारा लिखें (केवल नए अकाउंट के लिए)</label>
-      <input id="auth-password-confirm" type="password" autocomplete="new-password" placeholder="पासवर्ड की पुष्टि करें">
-      <div class="auth-actions">
-        <button class="auth-primary" type="button" id="auth-email-login">Email Login</button>
-        <button class="auth-primary" type="button" id="auth-email-create">नया अकाउंट बनाएँ</button>
+      <div id="auth-confirm-group" style="display:none;">
+        <label for="auth-password-confirm">पासवर्ड दोबारा लिखें</label>
+        <input id="auth-password-confirm" type="password" autocomplete="new-password" placeholder="पासवर्ड की पुष्टि करें">
       </div>
+      <div class="auth-actions" id="auth-login-actions">
+        <button class="auth-primary" type="button" id="auth-email-login">Email Login / लॉगिन करें</button>
+      </div>
+      <div class="auth-actions" id="auth-signup-actions" style="display:none;">
+        <button class="auth-primary" type="button" id="auth-email-create">Sign Up / नया अकाउंट बनाएँ</button>
+      </div>
+      <div id="auth-phone-section">
       <hr style="margin:14px 0;">
       <label for="auth-phone">फोन नंबर (देश कोड सहित, जैसे +91XXXXXXXXXX)</label>
       <input id="auth-phone" type="tel" autocomplete="tel" placeholder="+91XXXXXXXXXX">
@@ -1613,6 +1622,7 @@
         <label for="auth-otp">SMS से आया OTP</label>
         <input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" placeholder="OTP दर्ज करें">
         <div class="auth-actions"><button class="auth-primary" type="button" id="auth-verify-otp">OTP सत्यापित करें</button></div>
+      </div>
       </div>
       <div id="auth-message" role="status" aria-live="polite"></div>
       <div class="auth-actions"><button class="auth-secondary" type="button" id="auth-close">बंद करें</button></div>
@@ -1759,12 +1769,30 @@
     }
     window.chronicleOpenAuth = function () {
       if (authPanel) authPanel.style.display = "flex";
+      setAuthMode("login");
       setAuthMessage("");
     };
     function closeAuthPanel() {
       if (authPanel) authPanel.style.display = "none";
     }
     document.getElementById("auth-close")?.addEventListener("click", closeAuthPanel);
+    function setAuthMode(mode) {
+      const signup = mode === "signup";
+      document.getElementById("account-auth-title").textContent = signup ? "Create Account / नया अकाउंट" : "Account Login / लॉगिन";
+      document.getElementById("auth-confirm-group").style.display = signup ? "block" : "none";
+      document.getElementById("auth-signup-actions").style.display = signup ? "flex" : "none";
+      document.getElementById("auth-login-actions").style.display = signup ? "none" : "flex";
+      document.getElementById("auth-phone-section").style.display = signup ? "none" : "block";
+      document.getElementById("auth-mode-login").className = signup ? "auth-secondary" : "auth-primary";
+      document.getElementById("auth-mode-signup").className = signup ? "auth-primary" : "auth-secondary";
+      document.getElementById("auth-mode-login").setAttribute("aria-pressed", String(!signup));
+      document.getElementById("auth-mode-signup").setAttribute("aria-pressed", String(signup));
+      document.getElementById("auth-password").setAttribute("autocomplete", signup ? "new-password" : "current-password");
+      document.getElementById("auth-password-confirm").value = "";
+      setAuthMessage("");
+    }
+    document.getElementById("auth-mode-login")?.addEventListener("click", () => setAuthMode("login"));
+    document.getElementById("auth-mode-signup")?.addEventListener("click", () => setAuthMode("signup"));
     authPanel?.addEventListener("click", event => {
       if (event.target === authPanel) closeAuthPanel();
     });
