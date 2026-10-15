@@ -1597,9 +1597,9 @@
         <button class="auth-secondary" type="button" id="auth-mode-signup" aria-pressed="false">Sign Up / नया अकाउंट</button>
       </div>
       <label for="auth-email">ईमेल</label>
-      <input id="auth-email" type="email" autocomplete="off" autocapitalize="none" placeholder="अपना ईमेल लिखें">
+      <input id="auth-email" name="diary-login-email" type="email" autocomplete="off" autocapitalize="none" placeholder="अपना ईमेल लिखें">
       <label for="auth-password">पासवर्ड</label>
-      <input id="auth-password" type="password" autocomplete="new-password" placeholder="पासवर्ड लिखें">
+      <input id="auth-password" name="diary-login-password" type="password" autocomplete="off" placeholder="पासवर्ड लिखें">
       <div id="auth-confirm-group" style="display:none;">
         <label for="auth-password-confirm">पासवर्ड दोबारा लिखें</label>
         <input id="auth-password-confirm" type="password" autocomplete="new-password" placeholder="पासवर्ड की पुष्टि करें">
@@ -1610,13 +1610,11 @@
       <div class="auth-actions" id="auth-signup-actions" style="display:none;">
         <button class="auth-primary" type="button" id="auth-email-create">Sign Up / नया अकाउंट बनाएँ</button>
       </div>
-      <div class="auth-actions" id="auth-phone-toggle-wrap" style="margin-top:12px;">
-        <button class="auth-secondary" type="button" id="auth-phone-toggle">Phone Login / फोन से लॉगिन</button>
-      </div>
-      <div id="auth-phone-section" style="display:none;">
-      <hr style="margin:14px 0;">
+      <div id="auth-phone-section" style="display:block;">
+      <hr style="margin:18px 0;">
+      <h3 style="margin:0 0 10px;font-size:16px;font-weight:700;">Phone Login / फोन नंबर से लॉगिन</h3>
       <label for="auth-phone">फोन नंबर (देश कोड सहित, जैसे +91XXXXXXXXXX)</label>
-      <input id="auth-phone" type="tel" autocomplete="tel" placeholder="+91XXXXXXXXXX">
+      <input id="auth-phone" name="diary-phone-login" type="tel" autocomplete="tel" placeholder="+91XXXXXXXXXX">
       <div id="recaptcha-container" style="margin:8px 0;"></div>
       <div class="auth-actions">
         <button class="auth-primary" type="button" id="auth-send-otp">फोन पर OTP भेजें</button>
@@ -1779,9 +1777,8 @@
       document.getElementById("auth-phone").value = "";
       document.getElementById("auth-otp").value = "";
       document.getElementById("auth-otp-area").style.display = "none";
-      document.getElementById("auth-phone-section").style.display = "none";
-      document.getElementById("auth-phone-toggle-wrap").style.display = "flex";
-      document.getElementById("auth-phone-toggle").textContent = "Phone Login / फोन से लॉगिन";
+      document.getElementById("auth-phone-section").style.display = "block";
+      document.getElementById("auth-otp-area").style.display = "none";
       setAuthMessage("");
     };
     function closeAuthPanel() {
@@ -1794,8 +1791,7 @@
       document.getElementById("auth-confirm-group").style.display = signup ? "block" : "none";
       document.getElementById("auth-signup-actions").style.display = signup ? "flex" : "none";
       document.getElementById("auth-login-actions").style.display = signup ? "none" : "flex";
-      document.getElementById("auth-phone-section").style.display = "none";
-      document.getElementById("auth-phone-toggle-wrap").style.display = signup ? "none" : "flex";
+      document.getElementById("auth-phone-section").style.display = signup ? "none" : "block";
       document.getElementById("auth-mode-login").className = signup ? "auth-secondary" : "auth-primary";
       document.getElementById("auth-mode-signup").className = signup ? "auth-primary" : "auth-secondary";
       document.getElementById("auth-mode-login").setAttribute("aria-pressed", String(!signup));
@@ -1806,8 +1802,7 @@
     }
     document.getElementById("auth-mode-login")?.addEventListener("click", () => {
       setAuthMode("login");
-      document.getElementById("auth-phone-section").style.display = "none";
-      document.getElementById("auth-phone-toggle-wrap").style.display = "flex";
+      document.getElementById("auth-phone-section").style.display = "block";
       document.getElementById("auth-email").value = "";
       document.getElementById("auth-password").value = "";
     });
@@ -1816,14 +1811,6 @@
       document.getElementById("auth-email").value = "";
       document.getElementById("auth-password").value = "";
       document.getElementById("auth-password-confirm").value = "";
-    });
-    document.getElementById("auth-phone-toggle")?.addEventListener("click", () => {
-      const section = document.getElementById("auth-phone-section");
-      const opening = section.style.display === "none" || !section.style.display;
-      section.style.display = opening ? "block" : "none";
-      document.getElementById("auth-phone-toggle").textContent = opening ? "Email Login / ईमेल से लॉगिन" : "Phone Login / फोन से लॉगिन";
-      document.getElementById("auth-otp-area").style.display = "none";
-      setAuthMessage("");
     });
     authPanel?.addEventListener("click", event => {
       if (event.target === authPanel) closeAuthPanel();
