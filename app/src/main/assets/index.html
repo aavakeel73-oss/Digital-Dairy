@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Chronicle - Offline Digital Diary &amp; Journal</title>
+  <meta name="description" content="A private, mobile-first offline digital diary with journal entries, notes, reminders, smart alarms and shareable ringtones, PIN security, and standalone HTML export.">
+  <meta property="og:title" content="Chronicle - Offline Digital Diary &amp; Journal">
+  <meta property="og:description" content="A private, mobile-first offline digital diary with journal entries, notes, reminders, smart alarms and shareable ringtones, PIN security, and standalone HTML export.">
+  <meta name="theme-color" content="#d97706">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Chronicle">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #d97706;
+      --accent-hover: #b45309;
+      --accent-soft: #fef3c7;
+      --danger: #ef4444;
+      --success: #10b981;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    [data-theme="dark"] {
+      --bg: #090d16;
+      --card: #131b2e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --accent-soft: rgba(245, 158, 11, 0.15);
+    }
+    [data-theme="sepia"] {
+      --bg: #fbf7ee;
+      --card: #f4ece1;
+      --text: #3c2f25;
+      --text-muted: #7d6e5d;
+      --border: #e6dac8;
+      --accent: #b45309;
+      --accent-hover: #92400e;
+      --accent-soft: #fef3c7;
+    }
+    [data-font="serif"] { --font-stack: Georgia, Cambria, "Times New Roman", serif; }
+    [data-font="mono"] { --font-stack: "SF Mono", Monaco, Menlo, Consolas, monospace; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-stack);
+      line-height: 1.5;
+      padding-bottom: 74px;
+      min-height: 100vh;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-sm { padding: 4px 10px; font-size: 0.75rem; border-radius: 8px; }
+    .btn-danger { color: var(--danger); border-color: var(--danger); }
+    .btn-icon { padding: 8px; border-radius: 10px; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .stat-val { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+    .stat-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+
+    /* Tabs & Views */
+    .view-panel { display: none; }
+    .view-panel.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 6px;
+      z-index: 40;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+      min-width: 54px;
+    }
+    .nav-btn.active { color: var(--accent); font-weight: 700; }
+    .nav-btn svg { width: 18px; height: 18px; }
+
+    /* Form controls */
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+    /* Meta and text preview */
+    .meta-line {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .meta-sep { opacity: 0.5; }
+    .entry-snippet {
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.15s ease; }
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--bg);
+    }
+
+    /* Calendar Grid */
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-day-label { text-align: center; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; padding: 4px; }
+    .cal-day {
+      min-height: 48px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      background: var(--card);
+      font-size: 0.78rem;
+    }
+    .cal-day:hover { border-color: var(--border); }
+    .cal-day.today { border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .cal-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
+    .cal-day.other-month { opacity: 0.3; }
+    .cal-dots { display: flex; gap: 2px; }
+    .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+    .cal-day.selected .cal-dot { background: #fff; }
+
+    /* Notes styles */
+    .note-card { border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
+    .note-amber { background: rgba(254, 243, 199, 0.3); border-color: rgba(253, 230, 138, 0.6); }
+    .note-emerald { background: rgba(209, 250, 229, 0.3); border-color: rgba(167, 243, 208, 0.6); }
+    .note-rose { background: rgba(255, 228, 230, 0.3); border-color: rgba(254, 205, 211, 0.6); }
+    .note-indigo { background: rgba(224, 231, 255, 0.3); border-color: rgba(199, 210, 254, 0.6); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 74px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+    }
+
+    /* Keypad PIN Lock */
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      background: #090d16;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      padding: 20px;
+    }
+    .pin-dots { display: flex; gap: 12px; margin: 20px 0; }
+    .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #64748b; }
+    .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 240px; margin-top: 10px; }
+    .key-btn {
+      height: 60px;
+      border-radius: 16px;
+      border: 1px solid #1e293b;
+      background: #131b2e;
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key-btn:active { transform: scale(0.95); background: #1e293b; }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  
+    /* Reminder actions remain visible and easy to tap on mobile screens. */
+    #reminders-feed .card { flex-wrap: wrap; gap: 10px; align-items: flex-start !important; }
+    #reminders-feed .reminder-actions { width: 100%; }
+    #reminders-feed .reminder-actions .btn { min-height: 38px; }
+    @media (max-width: 420px) {
+      #reminders-feed .reminder-actions select { width: 100%; max-width: 100% !important; }
+      #reminders-feed .reminder-actions .btn { flex: 1 1 auto; }
+    }
+
+  </style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script><style>.aistudio-hover-highlight { box-shadow: inset 0 0 0 0.5px white, inset 0 0 0 1.5px rgba(128,128,128,0.6) !important; }.aistudio-active-highlight { outline: 2px solid #87a9ff !important; outline-offset: -2px !important; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3) !important; }.aistudio-generating-blur { filter: blur(5px) grayscale(100%) brightness(28%) !important; transition: filter 0.3s ease; }#aistudio-focus-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: #87a9ff; border-radius: 12px; z-index: 10000; padding: 8px; color: #32302c; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }#aistudio-hover-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: rgba(128,128,128,0.6); border-radius: 12px; z-index: 10000; padding: 8px; color: white; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }.aistudio-img-icon { display: none; vertical-align: middle; pointer-events: auto; cursor: pointer; }.aistudio-img-icon.visible { display: inline-flex; }#aistudio-focus-mode-tag .aistudio-img-icon { position: relative; width: 26px; height: 26px; background: #32302c; border-radius: 6px; margin: -4px -4px -4px 0; }#aistudio-focus-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-hover-mode-tag .aistudio-img-icon { position: relative; width: 18px; height: 18px; margin-left: 4px; }#aistudio-hover-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-focus-mode-tag .aistudio-img-icon:hover, #aistudio-hover-mode-tag .aistudio-img-icon:hover { background: #424242 !important; }#aistudio-focus-mode-tag .aistudio-img-icon:active, #aistudio-hover-mode-tag .aistudio-img-icon:active { background: #393f51 !important; }</style>
+<style>
+  #account-auth-panel { display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,.62); align-items:center; justify-content:center; padding:16px; }
+  #account-auth-panel .auth-card { width:min(100%,420px); max-height:90vh; overflow:auto; background:var(--card-bg, #fff); color:var(--text-color, #222); border-radius:16px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.28); }
+  #account-auth-panel input { box-sizing:border-box; width:100%; padding:12px; margin:6px 0 12px; border:1px solid #aaa; border-radius:8px; font-size:16px; }
+  #account-auth-panel .auth-actions { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  #account-auth-panel .auth-actions button { padding:10px 12px; border:0; border-radius:8px; cursor:pointer; }
+  #account-auth-panel .auth-primary { background:#2563eb; color:white; }
+  #account-auth-panel .auth-secondary { background:#e5e7eb; color:#111; }
+  #auth-message { font-size:13px; margin:8px 0; overflow-wrap:anywhere; }
+</style>
+
+</head>
+<body data-theme="light" data-font="sans">
+
+  <!-- PIN LOCK SCREEN -->
+  <div id="pin-lock-screen" class="pin-overlay" style="display: none;">
+    <div style="font-size: 2rem; margin-bottom: 8px;">🔒</div>
+    <h2 style="font-size: 1.25rem; font-weight: 700;">Chronicle Locked</h2>
+    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Enter your 4-digit security PIN</p>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pdot-0"></div>
+      <div class="pin-dot" id="pdot-1"></div>
+      <div class="pin-dot" id="pdot-2"></div>
+      <div class="pin-dot" id="pdot-3"></div>
+    </div>
+    <div id="pin-error-msg" style="color: #ef4444; font-size: 0.75rem; height: 18px; margin-bottom: 6px;"></div>
+    <div class="keypad">
+      <button class="key-btn" onclick="pressPin('1')">1</button>
+      <button class="key-btn" onclick="pressPin('2')">2</button>
+      <button class="key-btn" onclick="pressPin('3')">3</button>
+      <button class="key-btn" onclick="pressPin('4')">4</button>
+      <button class="key-btn" onclick="pressPin('5')">5</button>
+      <button class="key-btn" onclick="pressPin('6')">6</button>
+      <button class="key-btn" onclick="pressPin('7')">7</button>
+      <button class="key-btn" onclick="pressPin('8')">8</button>
+      <button class="key-btn" onclick="pressPin('9')">9</button>
+      <button class="key-btn" style="font-size: 0.8rem;" onclick="recoverPin()">Forgot</button>
+      <button class="key-btn" onclick="pressPin('0')">0</button>
+      <button class="key-btn" style="font-size: 0.85rem;" onclick="pressPinBackspace()">⌫</button>
+    </div>
+  </div>
+
+  <!-- APP HEADER -->
+  <header>
+    <div class="brand" onclick="switchView('dashboard')">
+      <div class="brand-icon">C</div>
+      <span>Chronicle</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm" onclick="downloadThisAppFile()" title="Download index.html file">⬇ Download File</button>
+      <button class="btn btn-sm" onclick="openSearchModal()">🔍 Search</button>
+      <button class="btn btn-sm" type="button" onclick="window.chronicleOpenAuth && window.chronicleOpenAuth()">✉️ Email Login</button>
+      <button class="btn btn-sm" id="google-login-btn" type="button" onclick="window.chronicleGoogleLogin && window.chronicleGoogleLogin()">🔐 Google Login</button>
+      <span id="google-user-status" style="font-size:0.72rem;color:var(--text-muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" aria-live="polite"></span>
+      <button class="btn btn-sm btn-primary" onclick="openEditorModal()">+ Write</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="container">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view-panel active">
+      <div style="margin-bottom: 16px;">
+        <h1 style="font-size: 1.4rem; font-weight: 700;" id="greeting-text">Welcome to your Diary</h1>
+        <p style="font-size: 0.8rem; color: var(--text-muted);" id="today-date-text">Tuesday, 13 Oct 2026 · Local Storage + Optional Cloud Sync</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-streak">1d</div>
+          <div class="stat-lbl">Streak</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-entries">1</div>
+          <div class="stat-lbl">Entries</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-words">31</div>
+          <div class="stat-lbl">Words</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-reminders">1</div>
+          <div class="stat-lbl">Reminders</div>
+        </div>
+      </div>
+
+      <!-- Mood Check-in Bar -->
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+          How are you feeling right now?
+        </div>
+        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+          <button class="btn btn-sm" onclick="quickMood('radiant')">✨ Radiant</button>
+          <button class="btn btn-sm" onclick="quickMood('happy')">😊 Joyful</button>
+          <button class="btn btn-sm" onclick="quickMood('calm')">🌿 Peaceful</button>
+          <button class="btn btn-sm" onclick="quickMood('reflective')">🌙 Thoughtful</button>
+          <button class="btn btn-sm" onclick="quickMood('anxious')">⚡ Restless</button>
+          <button class="btn btn-sm" onclick="quickMood('sad')">🌧️ Heavy</button>
+        </div>
+      </div>
+
+      <!-- Quick Write Prompt -->
+      <div class="card">
+        <textarea id="quick-prompt-input" rows="2" placeholder="Quick reflection, memory, or gratitude..." style="margin-bottom: 8px;"></textarea>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn bt
