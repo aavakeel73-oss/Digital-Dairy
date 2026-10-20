@@ -23,4 +23,5 @@ else
     }
 fi
 
-exec "$JAVACMD" org.gradle.wrapper.GradleWrapperMain "$
+exec "$JAVACMD" org.gradle.wrapper.GradleWrapperMain "$@"
+
