@@ -26,7 +26,8 @@ jobs:
             chmod +x gradlew
             ./gradlew assembleDebug
           else
-            gradle assembleDebug
+            gradle -p app assembleDebug
+        
           fi
 
       - name: Upload APK
