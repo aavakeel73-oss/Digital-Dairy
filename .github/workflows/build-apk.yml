@@ -24,7 +24,7 @@ jobs:
         run: |
           if [ -f gradlew ]; then
             chmod +x gradlew
-            ./gradlew assembleDebug
+            ./gradle -p app assembleDebug
           else
             gradle -p app assembleDebug
         
