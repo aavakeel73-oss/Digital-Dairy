@@ -1,4 +1,7 @@
+
 <!DOCTYPE html>
+
+
 <html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -337,6 +340,32 @@
       #reminders-feed .reminder-actions select { width: 100%; max-width: 100% !important; }
       #reminders-feed .reminder-actions .btn { flex: 1 1 auto; }
     }
+
+
+/* Mobile layout repair: keep every header action reachable without horizontal clipping. */
+html,body{max-width:100%;overflow-x:hidden}
+header{gap:10px;flex-wrap:wrap;min-width:0}
+.brand{min-width:0;flex:0 0 auto;white-space:nowrap}
+.header-actions{min-width:0;flex:1 1 100%;display:flex;flex-wrap:wrap;gap:7px}
+.header-actions .btn{min-height:38px;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.header-actions #google-user-status{max-width:100%;align-self:center}
+.container,.card,.stat-box{min-width:0}
+.card{overflow-wrap:anywhere}
+.bottom-nav{padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.modal-card{max-height:min(90dvh,90vh)}
+@media(min-width:850px){header{flex-wrap:nowrap}.header-actions{flex:0 1 auto}}
+@media(max-width:640px){
+ header{padding:10px 12px;align-items:flex-start}
+ .brand{font-size:1.1rem}
+ .header-actions{width:100%}
+ .header-actions .btn{flex:1 1 calc(50% - 7px);font-size:.78rem;padding:8px 7px}
+ .container{padding:14px 12px}
+ .stats-grid{gap:9px}
+ .stat-box{padding:12px}
+ .bottom-nav .nav-btn{min-width:0;flex:1;padding:5px 2px;font-size:.65rem}
+ #view-dashboard h1{overflow-wrap:anywhere}
+ .modal-footer{flex-wrap:wrap}
+}
 
   </style>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script><style>.aistudio-hover-highlight { box-shadow: inset 0 0 0 0.5px white, inset 0 0 0 1.5px rgba(128,128,128,0.6) !important; }.aistudio-active-highlight { outline: 2px solid #87a9ff !important; outline-offset: -2px !important; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3) !important; }.aistudio-generating-blur { filter: blur(5px) grayscale(100%) brightness(28%) !important; transition: filter 0.3s ease; }#aistudio-focus-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: #87a9ff; border-radius: 12px; z-index: 10000; padding: 8px; color: #32302c; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }#aistudio-hover-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: rgba(128,128,128,0.6); border-radius: 12px; z-index: 10000; padding: 8px; color: white; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }.aistudio-img-icon { display: none; vertical-align: middle; pointer-events: auto; cursor: pointer; }.aistudio-img-icon.visible { display: inline-flex; }#aistudio-focus-mode-tag .aistudio-img-icon { position: relative; width: 26px; height: 26px; background: #32302c; border-radius: 6px; margin: -4px -4px -4px 0; }#aistudio-focus-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-hover-mode-tag .aistudio-img-icon { position: relative; width: 18px; height: 18px; margin-left: 4px; }#aistudio-hover-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-focus-mode-tag .aistudio-img-icon:hover, #aistudio-hover-mode-tag .aistudio-img-icon:hover { background: #424242 !important; }#aistudio-focus-mode-tag .aistudio-img-icon:active, #aistudio-hover-mode-tag .aistudio-img-icon:active { background: #393f51 !important; }</style>
@@ -842,21 +871,51 @@
       setTimeout(function() { el.style.display = 'none'; }, 2000);
     }
 
-    function copyToClipboard(text, label) {
-      if (!label) label = 'Copied to clipboard!';
-      navigator.clipboard.writeText(text).then(function() {
-        showToast(label);
-      }).catch(function() {
-        var t = document.createElement('textarea');
-        t.value = text;
-        document.body.appendChild(t);
-        t.select();
-        document.execCommand('copy');
-        document.body.removeChild(t);
-        showToast(label);
-      });
+    function showManualCopy(text) {
+      var old = document.getElementById('chronicle-copy-overlay');
+      if (old) old.remove();
+      var overlay = document.createElement('div');
+      overlay.id = 'chronicle-copy-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
+      var panel = document.createElement('div');
+      panel.style.cssText = 'background:var(--card);color:var(--text);border-radius:16px;padding:18px;width:100%;max-width:480px;box-shadow:0 12px 40px #0005';
+      var title = document.createElement('h3');
+      title.textContent = 'कॉपी / शेयर करें';
+      var info = document.createElement('p');
+      info.textContent = 'टेक्स्ट को देर तक दबाकर Copy चुनें।';
+      info.style.cssText = 'font-size:13px;margin:8px 0';
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.readOnly = true;
+      area.style.cssText = 'width:100%;height:180px;font-size:16px;user-select:text;-webkit-user-select:text';
+      var select = document.createElement('button');
+      select.className = 'btn btn-primary'; select.textContent = 'पूरा टेक्स्ट चुनें';
+      select.onclick = function(){area.focus();area.select();area.setSelectionRange(0,area.value.length);};
+      var close = document.createElement('button');
+      close.className = 'btn'; close.textContent = 'बंद करें';
+      close.style.marginLeft = '8px'; close.onclick = function(){overlay.remove();};
+      panel.append(title,info,area,select,close);overlay.appendChild(panel);
+      document.body.appendChild(overlay);
+      area.focus();area.select();
     }
-
+    async function copyToClipboard(text, label) {
+      label = label || 'कॉपी हो गया ✓';
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(String(text));
+          showToast(label); return true;
+        }
+      } catch(err) {}
+      var t = document.createElement('textarea');
+      t.value = String(text);
+      t.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:.01';
+      document.body.appendChild(t);t.focus();t.select();
+      var copied = false;
+      try {copied = document.execCommand('copy');}catch(err){}
+      t.remove();
+      if(copied){showToast(label);return true;}
+      showManualCopy(String(text));return false;
+    }
     function copyEntryById(id) {
       var e = journals.find(function(x) { return x.id === id; });
       if (e) copyToClipboard(e.content, 'Copied entry to clipboard!');
@@ -1580,6 +1639,7 @@
             '<button class="btn btn-sm" onclick="previewChosenTone(\'' + (r.tone || 'classic') + '\')">▶ Preview</button>',
             '<button class="btn btn-sm" onclick="toggleReminderDone(\'' + r.id + '\')">' + (r.isCompleted ? 'Undo' : 'Done') + '</button>',
             '<button type="button" class="btn btn-sm btn-primary" onclick="editReminder(\'' + r.id + '\')">✏️ Edit / एडिट</button>',
+            '<button type="button" class="btn btn-sm" onclick="copyReminder(\'' + r.id + '\')">📋 Copy / कॉपी</button>',
             '<button type="button" class="btn btn-sm" onclick="shareReminder(\'' + r.id + '\')">↗️ Share</button>',
             '<button type="button" class="btn btn-sm btn-danger" onclick="deleteReminder(\'' + r.id + '\')">🗑️ Delete</button>',
           '</div>'
@@ -1692,6 +1752,18 @@
       renderRemindersView();
       showToast('रिमाइंडर डिलीट हो गया');
     }
+    function copyReminder(id) {
+      var r = reminders.find(function(x) { return String(x.id) === String(id); });
+      if (!r) { showToast('रिमाइंडर नहीं मिला'); return; }
+      var repeatLabels = {none:'एक बार', daily:'रोज़', weekly:'हर सप्ताह', monthly:'हर महीने', yearly:'हर साल'};
+      var content = '📌 Digital Diary Reminder\n' +
+        'शीर्षक: ' + (r.title || 'रिमाइंडर') + '\n' +
+        (r.message ? 'विवरण: ' + r.message + '\n' : '') +
+        'तारीख: ' + (r.date || '—') + '\n' +
+        'समय: ' + (r.time || '—') + '\n' +
+        'दोहराव: ' + (repeatLabels[r.repeat] || r.repeat || 'एक बार');
+      copyToClipboard(content, 'रिमाइंडर कॉपी हो गया ✓');
+    }
     async function shareReminder(id) {
       var r = reminders.find(function(x) { return String(x.id) === String(id); });
       if (!r) { showToast('रिमाइंडर नहीं मिला'); return; }
@@ -1711,22 +1783,7 @@
           if (err && err.name === 'AbortError') return;
         }
       }
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(shareText);
-          showToast('रिमाइंडर कॉपी हो गया — अब कहीं भी शेयर करें');
-          return;
-        }
-      } catch (err) {}
-      var area = document.createElement('textarea');
-      area.value = shareText; area.setAttribute('readonly', '');
-      area.style.position = 'fixed'; area.style.opacity = '0';
-      document.body.appendChild(area); area.select();
-      var copied = false;
-      try { copied = document.execCommand('copy'); } catch (err) {}
-      area.remove();
-      if (copied) showToast('रिमाइंडर कॉपी हो गया — अब कहीं भी शेयर करें');
-      else window.prompt('इस रिमाइंडर को कॉपी करके शेयर करें:', shareText);
+      await copyToClipboard(shareText, 'रिमाइंडर कॉपी हो गया ✓');
     }
     function saveDailyRitualTime() {
       settings.dailyReminderTime = document.getElementById('daily-ritual-time').value;
@@ -1960,16 +2017,29 @@
       getFirestore, doc, getDoc, setDoc, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCv9tWc183pssCDUinQWLwue02skrPB1CE",
-      authDomain: "digital-dairy-922a8.firebaseapp.com",
-      databaseURL: "https://digital-dairy-922a8-default-rtdb.firebaseio.com",
-      projectId: "digital-dairy-922a8",
-      storageBucket: "digital-dairy-922a8.firebasestorage.app",
-      messagingSenderId: "123517202916",
-      appId: "1:123517202916:web:697075fcfa02aeb9be97f1",
-      measurementId: "G-GHRLWCNVPG"
-    };
+    
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, function(ch) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[ch];
+  });
+}
+
+window.escapeHtml = escapeHtml;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBB2qyiA0Vv6x2ePGiZ2jUYwRyr7UgQg0Y",
+  authDomain: "chronicle-diary-23cb2.firebaseapp.com",
+  projectId: "chronicle-diary-23cb2",
+  storageBucket: "chronicle-diary-23cb2.firebasestorage.app",
+  messagingSenderId: "791391618508",
+  appId: "1:791391618508:web:b086a23afa7f6bd31f4969"
+};
 
     const firebaseApp = initializeApp(firebaseConfig);
     const auth = getAuth(firebaseApp);
@@ -2229,57 +2299,109 @@
   </script>
 
 <script>
-/* Independent reminder-save safety handler: works even if the original inline click handler fails. */
-(function () {
-  function toastMessage(message) {
-    var el = document.getElementById('app-toast');
-    if (el) { el.textContent = message; el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 3200); }
-    else { alert(message); }
+/* Persistent reminder storage: localStorage with IndexedDB fallback for Android content:// viewers. */
+(function(){
+  var dbPromise;
+  function db(){
+    if(!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB unavailable'));
+    if(!dbPromise) dbPromise=new Promise(function(resolve,reject){
+      var req=indexedDB.open('ChronicleReminderDB',1);
+      req.onupgradeneeded=function(){if(!req.result.objectStoreNames.contains('data')) req.result.createObjectStore('data');};
+      req.onsuccess=function(){resolve(req.result);};
+      req.onerror=function(){reject(req.error);};
+    });
+    return dbPromise;
   }
-  function safeSave(list) {
-    var json = JSON.stringify(list);
-    localStorage.setItem('chr_reminders', json);
-    var check = JSON.parse(localStorage.getItem('chr_reminders') || 'null');
-    if (!Array.isArray(check) || check.length !== list.length) throw new Error('Storage verification failed');
-    window.reminders = list;
+  async function idbWrite(list){
+    var database=await db();
+    return new Promise(function(resolve,reject){
+      var tx=database.transaction('data','readwrite');
+      tx.objectStore('data').put(list,'reminders');
+      tx.oncomplete=resolve;
+      tx.onerror=function(){reject(tx.error);};
+      tx.onabort=function(){reject(tx.error);};
+    });
   }
-  document.addEventListener('click', function (event) {
-    var button = event.target && event.target.closest ? event.target.closest('#reminder-save-btn') : null;
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  async function idbRead(){
+    var database=await db();
+    return new Promise(function(resolve,reject){
+      var tx=database.transaction('data','readonly');
+      var req=tx.objectStore('data').get('reminders');
+      req.onsuccess=function(){resolve(req.result);};
+      req.onerror=function(){reject(req.error);};
+    });
+  }
+  function notify(msg){if(typeof showToast==='function')showToast(msg);else alert(msg);}
+  function localWrite(list){
     try {
-      var titleEl=document.getElementById('rem-in-title'), messageEl=document.getElementById('rem-in-message');
-      var dateEl=document.getElementById('rem-in-date'), timeEl=document.getElementById('rem-in-time');
-      var repeatEl=document.getElementById('rem-in-repeat'), toneEl=document.getElementById('rem-in-tone');
-      var title=titleEl ? titleEl.value.trim() : '', message=messageEl ? messageEl.value.trim() : '';
-      var date=dateEl ? dateEl.value : '', time=timeEl ? timeEl.value : '';
-      if (!title) { toastMessage('कृपया रिमाइंडर का शीर्षक लिखें।'); if(titleEl) titleEl.focus(); return; }
-      if (!date || !time) { toastMessage('कृपया तारीख और समय चुनें।'); return; }
-      var list=Array.isArray(window.reminders) ? window.reminders.slice() : [];
-      if (!list.length) { try { var stored=JSON.parse(localStorage.getItem('chr_reminders')||'[]'); if(Array.isArray(stored)) list=stored; } catch(_){} }
-      var editId = (typeof window.editingReminderId !== 'undefined') ? window.editingReminderId : null;
-      var record={title:title,message:message,date:date,time:time,repeat:repeatEl?repeatEl.value:'none',tone:toneEl?(toneEl.value||'classic'):'classic',isCompleted:false,updatedAt:Date.now()};
-      if (editId !== null && editId !== undefined) {
-        var idx=list.findIndex(function(item){return String(item.id)===String(editId);});
-        if(idx<0) { toastMessage('रिमाइंडर नहीं मिला। सूची फिर खोलकर Edit करें।'); return; }
-        list[idx]=Object.assign({},list[idx],record);
-      } else {
-        record.id='rem-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
-        list.push(record);
-      }
-      safeSave(list);
-      if (typeof window.renderRemindersView === 'function') window.renderRemindersView();
-      if (typeof window.closeReminderModal === 'function') window.closeReminderModal();
-      if (typeof window.editingReminderId !== 'undefined') window.editingReminderId=null;
-      toastMessage(editId !== null && editId !== undefined ? 'रिमाइंडर अपडेट हो गया ✓' : 'रिमाइंडर सेव हो गया ✓');
-    } catch (error) {
-      console.error('Reminder save failed:', error);
-      toastMessage('रिमाइंडर सेव नहीं हुआ। फोन की साइट स्टोरेज अनुमति जाँचें।');
+      localStorage.setItem('chr_reminders',JSON.stringify(list));
+      return localStorage.getItem('chr_reminders')===JSON.stringify(list);
+    }catch(e){return false;}
+  }
+  var originalSetStorage=window.setStorage;
+  window.setStorage=function(key,value){
+    if(key==='reminders'){
+      var ok=localWrite(value);
+      idbWrite(value).catch(function(e){console.warn('Reminder backup unavailable',e);});
+      try{window.dispatchEvent(new CustomEvent('chronicle-local-data-changed',{detail:{key:key}}));}catch(e){}
+      return ok || !!window.indexedDB;
     }
-  }, true);
+    return originalSetStorage(key,value);
+  };
+  // Restore IndexedDB data only if localStorage has no user-saved reminder list.
+  idbRead().then(function(saved){
+    if(!Array.isArray(saved))return;
+    var local=null;
+    try{local=JSON.parse(localStorage.getItem('chr_reminders')||'null');}catch(e){}
+    if(Array.isArray(local))return;
+    window.reminders=saved;
+    if(typeof renderRemindersView==='function')renderRemindersView();
+    if(typeof renderDashboard==='function')renderDashboard();
+  }).catch(function(e){console.warn('IndexedDB read unavailable',e);});
+  // Save is handled here to wait for confirmed persistent storage.
+  var saveBtn=document.getElementById('reminder-save-btn');
+  if(saveBtn){
+    saveBtn.onclick=null;
+    saveBtn.addEventListener('click',async function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      var title=document.getElementById('rem-in-title').value.trim();
+      var message=document.getElementById('rem-in-message').value.trim();
+      var date=document.getElementById('rem-in-date').value;
+      var time=document.getElementById('rem-in-time').value;
+      if(!title){notify('कृपया रिमाइंडर का शीर्षक लिखें');return;}
+      if(!date||!time){notify('तारीख और समय चुनें');return;}
+      var record={title:title,message:message,date:date,time:time,
+        repeat:document.getElementById('rem-in-repeat').value,
+        tone:document.getElementById('rem-in-tone').value,
+        isCompleted:false,updatedAt:Date.now()};
+      var next=reminders.slice();
+      var editId=window.editingReminderId;
+      if(editId!==null&&editId!==undefined){
+        var idx=next.findIndex(function(x){return String(x.id)===String(editId);});
+        if(idx<0){notify('एडिट करने वाला रिमाइंडर नहीं मिला');return;}
+        next[idx]=Object.assign({},next[idx],record);
+      }else{
+        record.id='rem-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+        next.push(record);
+      }
+      saveBtn.disabled=true;
+      try{
+        var localOK=localWrite(next), dbOK=false;
+        try{await idbWrite(next);dbOK=true;}catch(err){console.warn(err);}
+        if(!localOK&&!dbOK)throw new Error('Browser storage blocked');
+        window.reminders=next;
+        window.editingReminderId=null;
+        closeReminderModal();
+        renderRemindersView();
+        if(typeof renderDashboard==='function')renderDashboard();
+        try{window.dispatchEvent(new CustomEvent('chronicle-local-data-changed',{detail:{key:'reminders'}}));}catch(e){}
+        notify(editId?'रिमाइंडर अपडेट हो गया ✓':'रिमाइंडर सेव हो गया ✓');
+      }catch(err){
+        notify('सेव नहीं हुआ: Chrome में वेबसाइट https:// से खोलें। इस फाइल-व्यूअर में स्टोरेज बंद है।');
+      }finally{saveBtn.disabled=false;}
+    },true);
+  }
 })();
 </script>
-
 </body></html>
