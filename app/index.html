@@ -380,8 +380,27 @@ header{gap:10px;flex-wrap:wrap;min-width:0}
   #auth-message { font-size:13px; margin:8px 0; overflow-wrap:anywhere; }
 </style>
 
-</head>
+<style id="chronicle-premium-ui">
+:root{--bg:#fcf9f3;--card:#fffdf9;--text:#29251e;--text-muted:#877d70;--border:#ece4d8;--accent:#ae7833;--accent-hover:#895820;--accent-soft:#fff0d8}
+body{background:linear-gradient(180deg,#fff9ed 0,#faf7f1 320px,#f8f6f2 100%)}
+header{background:rgba(255,252,246,.95);border-bottom:1px solid #eee3d2;padding:14px 18px;box-shadow:0 3px 24px #75542b0b}
+.brand{font-family:Georgia,serif;font-size:1.4rem;letter-spacing:-.5px}.brand-icon{background:linear-gradient(135deg,#f0c478,#9b652a);border-radius:12px;width:37px;height:37px;box-shadow:0 5px 14px #b5844655}
+.header-actions{flex:0 1 auto!important;width:auto!important}.header-actions>.btn:not(.btn-primary),#google-user-status{display:none!important}.header-actions .btn-primary{background:#302b25;border-color:#302b25;border-radius:100px;padding:11px 18px;font-size:.85rem}
+.container{max-width:740px;padding:20px 16px}.card,.stat-box{border-radius:22px;border:1px solid #ede4d8;box-shadow:0 8px 25px #68513909;background:#fffdfa}.card{padding:20px;margin-bottom:18px}.stats-grid{gap:12px}.stat-box{padding:20px 16px}.stat-val{font-family:Georgia,serif;font-size:2rem;color:#76512a}.stat-lbl{letter-spacing:1px;font-weight:700}.btn{border-radius:12px;min-height:40px}.btn-primary{background:linear-gradient(120deg,#b78039,#8e5b2d);border-color:transparent}.bottom-nav{background:#fffdfa;border-top:1px solid #ece4d8;box-shadow:0 -5px 20px #3b2b1409}.nav-btn.active{color:#a66b28}.nav-btn{font-weight:600}.modal-card{border-radius:25px}
+#view-dashboard>div:first-child{background:linear-gradient(120deg,#3a3027,#77552f);padding:26px 22px;border-radius:26px;color:white;margin-bottom:20px!important;position:relative;overflow:hidden;box-shadow:0 14px 28px #7b542e33}
+#view-dashboard>div:first-child:after{content:'✦';position:absolute;right:18px;top:5px;font-size:105px;color:#ffffff17}
+#view-dashboard #greeting-text{font-family:Georgia,serif;font-size:1.65rem!important;color:#fff}#today-date-text{color:#f1dabb!important}
+#chronicle-welcome{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 16%,#ffdfa4 0,#fdf5e6 34%,#f8f4ed 72%);color:#2f2921}
+.welcome-card{width:min(100%,430px);text-align:center}.welcome-symbol{width:110px;height:110px;margin:0 auto 24px;border-radius:32px;background:linear-gradient(145deg,#e7b866,#9a622c);box-shadow:0 18px 35px #a8733850;display:grid;place-items:center;color:white;font:italic bold 68px Georgia,serif}.welcome-card h1{font:normal 42px Georgia,serif;letter-spacing:-1.5px}.welcome-card .subtitle{font-size:14px;color:#827462;line-height:1.8;margin:12px 0 34px}.welcome-card button{width:100%;border-radius:15px;padding:17px;margin-bottom:13px;font-size:16px;font-weight:700;cursor:pointer}.welcome-google{background:#fff;border:1px solid #e3d9c9;color:#352e26}.welcome-email{background:#302a24;color:#fff;border:1px solid #302a24}.welcome-card small{display:block;margin-top:20px;color:#978a79;font-size:12px}.welcome-loading{font-size:13px;color:#8e785d;margin-top:15px}
+#account-auth-panel .auth-card{background:#fffcf7;color:#2c271f;border:1px solid #e9ddca;border-radius:24px;padding:24px}#account-auth-panel .auth-primary{background:#a87537;border-radius:12px}#account-auth-panel .auth-secondary{border-radius:12px}
+@media(max-width:420px){.brand{font-size:1.22rem}.container{padding:14px 12px}.stat-box{padding:16px 12px}.stat-val{font-size:1.7rem}.header-actions .btn-primary{padding:10px 13px}}
+</style></head>
 <body data-theme="light" data-font="sans">
+<div id="chronicle-welcome" aria-label="Chronicle sign in">
+<div class="welcome-card"><div class="welcome-symbol">C</div><div style="font-size:11px;letter-spacing:4px;color:#a9783d;font-weight:800;margin-bottom:12px">YOUR PRIVATE SPACE</div><h1>Chronicle</h1><p class="subtitle">हर दिन की कहानी, एक खूबसूरत जगह पर।<br>आपकी यादें, नोट्स और ज़रूरी रिमाइंडर।</p><button class="welcome-google" onclick="window.chronicleGoogleLogin&&window.chronicleGoogleLogin()">🌐 &nbsp; Google से लॉगिन करें</button><button class="welcome-email" onclick="window.chronicleOpenAuth&&window.chronicleOpenAuth()">✉ &nbsp; ईमेल से लॉगिन करें</button><div class="welcome-loading" id="welcome-loading">अकाउंट की स्थिति जाँची जा रही है…</div><small>PRIVATE JOURNAL · SECURE ACCOUNT</small></div></div>
+<script>
+window.addEventListener('chronicle-auth-state',function(e){var gate=document.getElementById('chronicle-welcome');if(gate)gate.style.display=e.detail.loggedIn?'none':'flex';var load=document.getElementById('welcome-loading');if(load)load.textContent=e.detail.loggedIn?'':'अपना अकाउंट चुनकर लॉगिन करें';});
+</script>
 
   <!-- PIN LOCK SCREEN -->
   <div id="pin-lock-screen" class="pin-overlay" style="display: none;">
@@ -418,8 +437,8 @@ header{gap:10px;flex-wrap:wrap;min-width:0}
       <span>Chronicle</span>
     </div>
     <div class="header-actions">
-      <button class="btn btn-sm" onclick="downloadThisAppFile()" title="Download index.html file">⬇ Download File</button>
-      <button class="btn btn-sm" onclick="openSearchModal()">🔍 Search</button>
+
+
       <button class="btn btn-sm" type="button" onclick="window.chronicleOpenAuth && window.chronicleOpenAuth()">✉️ Email Login</button>
       <button class="btn btn-sm" id="google-login-btn" type="button" onclick="window.chronicleGoogleLogin && window.chronicleGoogleLogin()">🔐 Google Login</button>
       <span id="google-user-status" style="font-size:0.72rem;color:var(--text-muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" aria-live="polite"></span>
@@ -2260,6 +2279,7 @@ const firebaseConfig = {
         userStatus.textContent = user ? "Loading cloud…" : "";
         userStatus.title = user ? (user.email || "") : "";
       }
+      window.dispatchEvent(new CustomEvent("chronicle-auth-state", {detail:{loggedIn:!!user}}));
       if (!user) return;
 
       try {
