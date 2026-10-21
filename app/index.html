@@ -2016,6 +2016,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
       </div>
       <div class="auth-actions" id="auth-login-actions">
         <button class="auth-primary" type="button" id="auth-email-login">Email Login / लॉगिन करें</button>
+        <button class="auth-secondary" type="button" id="auth-forgot-password">पासवर्ड भूल गए?</button>
       </div>
       <div class="auth-actions" id="auth-signup-actions" style="display:none;">
         <button class="auth-primary" type="button" id="auth-email-create">Sign Up / नया अकाउंट बनाएँ</button>
@@ -2030,7 +2031,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import {
       getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence,
-      createUserWithEmailAndPassword, signInWithEmailAndPassword
+      createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc, serverTimestamp
@@ -2231,6 +2232,36 @@ const firebaseConfig = {
           : error.code === "auth/operation-not-allowed"
           ? "Firebase Console में Email/Password provider चालू करें।"
           : (error.message || "ईमेल लॉगिन नहीं हुआ।"), true);
+      }
+    });
+
+    // Firebase sends the reset link; no password is stored or reset locally.
+    let passwordResetInProgress = false;
+    document.getElementById("auth-forgot-password")?.addEventListener("click", async () => {
+      const email = document.getElementById("auth-email").value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return setAuthMessage("पहले अपना सही ईमेल पता लिखें।", true);
+      }
+      if (passwordResetInProgress) return;
+      const button = document.getElementById("auth-forgot-password");
+      passwordResetInProgress = true;
+      button.disabled = true;
+      button.textContent = "लिंक भेजा जा रहा है…";
+      try {
+        await persistenceReady;
+        await sendPasswordResetEmail(auth, email);
+        setAuthMessage("यदि इस ईमेल पर अकाउंट मौजूद है, तो पासवर्ड रीसेट लिंक भेज दिया गया है। Inbox और Spam फ़ोल्डर जाँचें।");
+      } catch (error) {
+        console.error("Password reset error:", error.code);
+        setAuthMessage(error.code === "auth/invalid-email" ? "ईमेल पता सही नहीं है।" :
+          error.code === "auth/too-many-requests" ? "बहुत अधिक प्रयास हुए हैं। थोड़ी देर बाद कोशिश करें।" :
+          error.code === "auth/operation-not-allowed" ? "Firebase में Email/Password लॉगिन चालू करें।" :
+          error.code === "auth/network-request-failed" ? "इंटरनेट कनेक्शन जाँचें।" :
+          "रीसेट लिंक नहीं भेजा जा सका। कृपया दोबारा कोशिश करें।", true);
+      } finally {
+        passwordResetInProgress = false;
+        button.disabled = false;
+        button.textContent = "पासवर्ड भूल गए?";
       }
     });
 
