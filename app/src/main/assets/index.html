@@ -438,7 +438,26 @@ header{padding-top:10px!important;min-height:74px!important;background:transpare
 .bottom-nav{background:#fffefa!important;box-shadow:0 -6px 20px #4b625019!important}
 #view-dashboard{padding-bottom:10px}
 @media(max-width:380px){.nature-shortcuts{gap:7px}.nature-shortcuts button{padding:10px 3px}.nature-shortcuts strong{font-size:12px}}
-</style></head>
+</style>
+<style id="chronicle-fixed-shell-v2">
+/* Three independent zones: Android status bar, fixed app header, scrollable content, fixed tabs. */
+:root{--status-reserve:32px;--app-header-height:76px;--app-tabs-height:76px}
+html{height:100%;overflow:hidden!important;background:#faf9f5!important;color-scheme:light}
+body{height:100dvh!important;min-height:0!important;margin:0!important;padding:var(--status-reserve) 0 0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;background:#faf9f5!important}
+body>header{position:relative!important;top:auto!important;left:auto!important;right:auto!important;flex:0 0 var(--app-header-height)!important;height:var(--app-header-height)!important;min-height:var(--app-header-height)!important;padding:9px 18px!important;z-index:35!important;background:#faf9f5!important;border-bottom:1px solid #e7ece5!important;box-shadow:0 3px 12px #3554440a!important;transform:none!important}
+body>.container{flex:1 1 auto!important;min-height:0!important;height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 14px 24px!important;max-width:740px!important;width:100%!important;scrollbar-width:thin}
+body>.bottom-nav{position:relative!important;bottom:auto!important;left:auto!important;right:auto!important;flex:0 0 var(--app-tabs-height)!important;height:var(--app-tabs-height)!important;min-height:var(--app-tabs-height)!important;z-index:40!important;padding:9px 4px 8px!important;box-shadow:0 -5px 18px #35544415!important;background:#fffefa!important;border-top:1px solid #e5e9e3!important}
+body>.bottom-nav .nav-btn{justify-content:center!important;gap:5px!important}
+body>.bottom-nav .nav-btn svg{width:23px!important;height:23px!important}
+.brand{font-size:clamp(1.15rem,5vw,1.55rem)!important}.brand-icon{flex-shrink:0}
+.nature-hero{box-shadow:0 10px 22px #38554220,inset 0 2px 2px white!important;border:1px solid white!important}
+.nature-shortcuts button{box-shadow:5px 8px 17px #38554222,inset 0 2px 2px white!important;border:1px solid white!important}
+.nature-journal{padding-bottom:22px!important}
+.nature-journal .card{box-shadow:0 6px 18px #38554216!important}
+.modal-overlay{z-index:80!important}
+@media(max-height:690px){:root{--app-header-height:65px;--app-tabs-height:68px}.nature-hero{height:175px}.nature-shortcuts button{min-height:112px}}
+</style>
+</head>
 <body data-theme="light" data-font="sans">
 <div id="chronicle-welcome" aria-label="Chronicle sign in">
 <div class="welcome-card"><div class="welcome-symbol">C</div><div style="font-size:11px;letter-spacing:4px;color:#a9783d;font-weight:800;margin-bottom:12px">YOUR PRIVATE SPACE</div><h1>Chronicle</h1><p class="subtitle">हर दिन की कहानी, एक खूबसूरत जगह पर।<br>आपकी यादें, नोट्स और ज़रूरी रिमाइंडर।</p><button class="welcome-google" onclick="window.chronicleGoogleLogin&&window.chronicleGoogleLogin()">🌐 &nbsp; Google से लॉगिन करें</button><button class="welcome-email" onclick="window.chronicleOpenAuth&&window.chronicleOpenAuth()">✉ &nbsp; ईमेल से लॉगिन करें</button><div class="welcome-loading" id="welcome-loading">अकाउंट की स्थिति जाँची जा रही है…</div><small>PRIVATE JOURNAL · SECURE ACCOUNT</small></div></div>
