@@ -10,6 +10,7 @@
   <meta property="og:title" content="Chronicle - Offline Digital Diary &amp; Journal">
   <meta property="og:description" content="A private, mobile-first offline digital diary with journal entries, notes, reminders, smart alarms and shareable ringtones, PIN security, and standalone HTML export.">
   <meta name="theme-color" content="#faf9f5">
+  <meta name="color-scheme" content="light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Chronicle">
@@ -564,8 +565,8 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
       </div>
       <div class="card" style="background:var(--accent-soft);">
         <strong>🔔 Reminder notifications</strong>
-        <p style="font-size:.78rem;margin:5px 0 10px;">समय आने पर रिमाइंडर की चुनी हुई घंटी बजेगी। नोटिफिकेशन में शीर्षक हेडिंग और आपका लिखा नोट नीचे दिखेगा। पेज खुला रखें।</p>
-        <button class="btn btn-sm" type="button" onclick="requestReminderNotifications()">नोटिफिकेशन चालू करें</button>
+        <p style="font-size:.78rem;margin:5px 0 10px;">पेज खुला रहने पर निर्धारित समय पर घंटी बजेगी। सिस्टम नोटिफिकेशन केवल समर्थित ब्राउज़र और अनुमति मिलने पर दिखेंगे। ऐप बंद होने पर अलार्म की गारंटी नहीं है।</p>
+        <button class="btn btn-sm" type="button" id="rem-notification-button" onclick="requestReminderNotifications()">नोटिफिकेशन अनुमति जाँचें</button>
         <span id="rem-notification-status" style="font-size:.75rem;margin-left:8px;"></span>
       </div>
 
@@ -1517,8 +1518,8 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     function deleteSmartAlarm(id) { smartAlarms=smartAlarms.filter(function(x){return x.id!==id;});setStorage('smartAlarms',smartAlarms);renderSmartAlarms(); }
     function stopSmartAlarm() { if (activeAlarmAudio) { try { activeAlarmAudio.pause(); activeAlarmAudio.currentTime = 0; } catch(e) {} activeAlarmAudio=null; } if (alarmAudioContext) { try { alarmAudioContext.close(); } catch(e) {} alarmAudioContext=null; } }
     function requestAlarmNotifications() {
-      if (!('Notification' in window)) { showToast('Notifications are not supported here'); return; }
-      Notification.requestPermission().then(function(result){showToast(result==='granted'?'Notifications enabled':'Notification permission not granted');});
+      if (!('Notification' in window) || !window.isSecureContext) { showToast('इस वातावरण में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं'); return; }
+      Promise.resolve(Notification.requestPermission()).then(function(result){showToast(result==='granted'?'Notifications enabled':'Notification permission not granted');}).catch(function(){showToast('नोटिफिकेशन अनुमति उपलब्ध नहीं');});
     }
     function checkSmartAlarms() {
       var now=new Date(), hh=String(now.getHours()).padStart(2,'0'), mm=String(now.getMinutes()).padStart(2,'0');
@@ -1559,9 +1560,9 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     }
     function requestReminderNotifications() {
       var status = document.getElementById('rem-notification-status');
-      if (!('Notification' in window)) { if(status) status.textContent = 'इस ब्राउज़र में नोटिफिकेशन उपलब्ध नहीं'; showToast('Notifications are not supported here'); return; }
+      if (!('Notification' in window) || !window.isSecureContext) { if(status) status.textContent = 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं। पेज खुला होने पर रिमाइंडर की घंटी बजेगी।'; return; }
       if (Notification.permission === 'granted') { if(status) status.textContent = 'चालू हैं ✓'; showToast('Reminder notifications are already enabled'); return; }
-      Notification.requestPermission().then(function(result) {
+      Promise.resolve(Notification.requestPermission()).then(function(result) {
         if(status) status.textContent = result === 'granted' ? 'चालू हैं ✓' : 'अनुमति नहीं मिली';
         showToast(result === 'granted' ? 'Reminder notifications enabled' : 'Notification permission not granted');
       }).catch(function(){ if(status) status.textContent = 'सेटिंग में अनुमति दें'; });
@@ -1600,7 +1601,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     var editingReminderId = null;
     function renderRemindersView() {
       var nstatus = document.getElementById('rem-notification-status');
-      if (nstatus && 'Notification' in window) nstatus.textContent = Notification.permission === 'granted' ? 'चालू हैं ✓' : (Notification.permission === 'denied' ? 'ब्राउज़र सेटिंग में अनुमति दें' : 'अभी बंद हैं');
+      if (nstatus) nstatus.textContent = (!('Notification' in window) || !window.isSecureContext) ? 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : (Notification.permission === 'denied' ? 'ब्राउज़र सेटिंग में अनुमति दें' : 'अभी बंद हैं')); 
       var feed = document.getElementById('reminders-feed');
       feed.innerHTML = '';
       if (reminders.length === 0) {
@@ -1724,7 +1725,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
         closeReminderModal();
         showToast('रिमाइंडर सेव हो गया ✓');
       }
-      if ('Notification' in window && Notification.permission === 'default') requestReminderNotifications();
+      // Ask for notification permission only from the explicit user button, not on saving a reminder.
     }
     function toggleReminderDone(id) {
       var r = reminders.find(function(x) { return String(x.id) === String(id); });
@@ -2451,6 +2452,19 @@ const firebaseConfig = {
       }finally{saveBtn.disabled=false;}
     },true);
   }
+})();
+</script>
+<script>
+(function(){
+  function updateNotificationUI(){
+    var button=document.getElementById('rem-notification-button');
+    var status=document.getElementById('rem-notification-status');
+    var supported=('Notification' in window)&&window.isSecureContext;
+    if(button){button.style.display=supported?'inline-flex':'none';}
+    if(status&&!supported){status.textContent='इस ब्राउज़र/WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं।';}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateNotificationUI);
+  else updateNotificationUI();
 })();
 </script>
 </body></html>
