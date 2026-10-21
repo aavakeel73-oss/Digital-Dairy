@@ -9,7 +9,7 @@
   <meta name="description" content="A private, mobile-first offline digital diary with journal entries, notes, reminders, smart alarms and shareable ringtones, PIN security, and standalone HTML export.">
   <meta property="og:title" content="Chronicle - Offline Digital Diary &amp; Journal">
   <meta property="og:description" content="A private, mobile-first offline digital diary with journal entries, notes, reminders, smart alarms and shareable ringtones, PIN security, and standalone HTML export.">
-  <meta name="theme-color" content="#d97706">
+  <meta name="theme-color" content="#fff9ed">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Chronicle">
@@ -394,6 +394,22 @@ header{background:rgba(255,252,246,.95);border-bottom:1px solid #eee3d2;padding:
 .welcome-card{width:min(100%,430px);text-align:center}.welcome-symbol{width:110px;height:110px;margin:0 auto 24px;border-radius:32px;background:linear-gradient(145deg,#e7b866,#9a622c);box-shadow:0 18px 35px #a8733850;display:grid;place-items:center;color:white;font:italic bold 68px Georgia,serif}.welcome-card h1{font:normal 42px Georgia,serif;letter-spacing:-1.5px}.welcome-card .subtitle{font-size:14px;color:#827462;line-height:1.8;margin:12px 0 34px}.welcome-card button{width:100%;border-radius:15px;padding:17px;margin-bottom:13px;font-size:16px;font-weight:700;cursor:pointer}.welcome-google{background:#fff;border:1px solid #e3d9c9;color:#352e26}.welcome-email{background:#302a24;color:#fff;border:1px solid #302a24}.welcome-card small{display:block;margin-top:20px;color:#978a79;font-size:12px}.welcome-loading{font-size:13px;color:#8e785d;margin-top:15px}
 #account-auth-panel .auth-card{background:#fffcf7;color:#2c271f;border:1px solid #e9ddca;border-radius:24px;padding:24px}#account-auth-panel .auth-primary{background:#a87537;border-radius:12px}#account-auth-panel .auth-secondary{border-radius:12px}
 @media(max-width:420px){.brand{font-size:1.22rem}.container{padding:14px 12px}.stat-box{padding:16px 12px}.stat-val{font-size:1.7rem}.header-actions .btn-primary{padding:10px 13px}}
+
+/* Chronicle mobile header and system status bar safe-area repair */
+html { width:100%; overflow-x:hidden; }
+body { width:100%; overflow-x:hidden; }
+header { position:sticky; top:0; padding:12px 16px; min-height:64px; display:flex; flex-wrap:nowrap; align-items:center; gap:8px; }
+header .brand { flex:1 1 auto; min-width:0; font-size:clamp(1.12rem,5vw,1.4rem); overflow:hidden; }
+header .brand span { overflow:hidden; text-overflow:ellipsis; }
+header .header-actions { flex:0 0 auto!important; width:auto!important; min-width:0; display:flex; flex-wrap:nowrap; }
+header .header-actions .btn-primary { flex:0 0 auto!important; min-height:40px; padding:9px 13px; font-size:.85rem; white-space:nowrap; }
+.container { width:100%; max-width:740px; }
+.bottom-nav { padding-bottom:max(8px,env(safe-area-inset-bottom,0px)); }
+@media(max-width:390px){header{padding:10px 12px}.brand-icon{width:32px;height:32px}.brand{font-size:1.1rem!important}.header-actions .btn-primary{padding:8px 11px!important}}
+/* In Android WebViews drawing behind system bars, reserve the exposed safe-area. */
+@supports (padding: env(safe-area-inset-top)) {
+  header { padding-top:max(12px,env(safe-area-inset-top)); }
+}
 </style></head>
 <body data-theme="light" data-font="sans">
 <div id="chronicle-welcome" aria-label="Chronicle sign in">
@@ -557,73 +573,17 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
       <div id="reminders-feed"></div>
     </div>
 
-    <!-- 6. SETTINGS VIEW -->
+    <!-- 6. SETTINGS VIEW: PIN SECURITY ONLY -->
     <div id="view-settings" class="view-panel">
-      <h1 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 14px;">Settings &amp; Backup</h1>
-
-      <!-- Download & Copy Standalone Code -->
-      <div class="card" style="border: 2px solid var(--accent); background: var(--accent-soft);">
-        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 6px;">Download or Copy Standalone App</h3>
-        <p style="font-size: 0.8rem; color: var(--text); margin-bottom: 12px;">
-          Export this entire Digital Diary as a single, self-contained <code>index.html</code> file ready to open in any browser or publish on GitHub Pages for free.
-        </p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-primary btn-sm" onclick="downloadThisAppFile()">⬇ Download index.html</button>
-          <button class="btn btn-sm" onclick="copyFullAppHtml()">📋 Copy Full Code</button>
-        </div>
-      </div>
-
-      <!-- Appearance -->
+      <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:14px;">Settings</h1>
       <div class="card">
-        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px;">Theme &amp; Appearance</h3>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <button class="btn btn-sm" onclick="setAppTheme('light')">☀️ Light Paper</button>
-          <button class="btn btn-sm" onclick="setAppTheme('dark')">🌙 Dark OLED</button>
-          <button class="btn btn-sm" onclick="setAppTheme('sepia')">📜 Vintage Sepia</button>
-        </div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Typography:</div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" onclick="setAppFont('sans')">Modern Sans</button>
-          <button class="btn btn-sm" onclick="setAppFont('serif')">Literary Serif</button>
-          <button class="btn btn-sm" onclick="setAppFont('mono')">Typewriter Mono</button>
-        </div>
-      </div>
-
-      <!-- Security -->
-      <div class="card">
-        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px;">PIN Lock Security</h3>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
-          Protect your diary entries with a 4-digit passcode on this device.
-        </p>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">🔒 PIN Lock Security</h3>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;">इस डिवाइस पर अपनी डायरी को 4 अंकों के PIN से सुरक्षित करें।</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="btn btn-primary btn-sm" onclick="openSetPinModal()">Configure PIN</button>
-          <button class="btn btn-sm" id="btn-lock-now" style="display: none;" onclick="lockAppNow()">Lock Now</button>
-          <button class="btn btn-sm btn-danger" id="btn-remove-pin" style="display: none;" onclick="disablePin()">Remove PIN</button>
+          <button class="btn btn-sm" id="btn-lock-now" style="display:none;" onclick="lockAppNow()">Lock Now</button>
+          <button class="btn btn-sm btn-danger" id="btn-remove-pin" style="display:none;" onclick="disablePin()">Remove PIN</button>
         </div>
-      </div>
-
-      <!-- Backup & JSON -->
-      <div class="card">
-        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px;">Data Backup &amp; Offline Storage</h3>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
-          100% stored in your browser LocalStorage. Download your data as JSON anytime.
-        </p>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-sm" onclick="exportDataJson()">Export JSON Backup</button>
-          <label class="btn btn-sm" style="margin: 0; cursor: pointer;">
-            Import JSON Backup
-            <input type="file" accept=".json" onchange="importDataJson(event)" style="display: none;">
-          </label>
-          <button class="btn btn-sm btn-danger" onclick="clearAllData()">Clear All Data</button>
-        </div>
-      </div>
-
-      <!-- GitHub Pages Notice -->
-      <div class="card" style="border-left: 3px solid var(--accent);">
-        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px;">Hosting on GitHub Pages (Free)</h3>
-        <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
-          To publish for free: create a repository on GitHub (e.g. <code>my-diary</code>), upload this file as <code>index.html</code>, go to Settings → Pages, and choose deploy from <code>main</code> / <code>root</code>.
-        </p>
       </div>
     </div>
   </div>
