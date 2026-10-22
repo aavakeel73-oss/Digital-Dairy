@@ -1,193 +1,70 @@
-
 package com.onlineindia.chronicle;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.content.Intent;
-import android.net.Uri;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.os.Build;
+import android.graphics.Color;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
-import android.webkit.JavascriptInterface;
-import android.webkit.ValueCallback;
-import android.webkit.CookieManager;
-import android.widget.Toast;
+import android.content.Intent;
+import android.net.Uri;
+import android.Manifest;
+import android.content.pm.PackageManager;
 
 public class MainActivity extends Activity {
-
     private WebView webView;
-    private ValueCallback<Uri[]> fileCallback;
-
-    private static final String HOME =
-        "file:///android_asset/index.html";
-
-    private static final String LOGIN_URL =
-        "https://chronicle-diary-23cb2.web.app/";
-
-    @Override
-    protected void onCreate(Bundle state) {
-        super.onCreate(state);
-
+    @Override public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().getDecorView().setBackgroundColor(Color.rgb(250,249,246));
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c != null) c.setSystemBarsAppearance(WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+        } else if (Build.VERSION.SDK_INT >= 23) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            getWindow().setStatusBarColor(Color.rgb(250,249,246));
+        }
         webView = new WebView(this);
+        // Prevent the WebView from drawing beneath status/navigation bars on Android 15+.
+        if (Build.VERSION.SDK_INT >= 35) {
+            webView.setOnApplyWindowInsetsListener((v, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return insets;
+            });
+        }
         setContentView(webView);
-
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(false);
-        settings.setSupportMultipleWindows(false);
-
-        CookieManager.getInstance()
-            .setAcceptCookie(true);
-
-        webView.addJavascriptInterface(
-            new ChronicleBridge(),
-            "ChronicleAndroid"
-        );
-
-        webView.setWebChromeClient(
-            new WebChromeClient() {
-
-                @Override
-                public boolean onShowFileChooser(
-                    WebView view,
-                    ValueCallback<Uri[]> callback,
-                    FileChooserParams params) {
-
-                    if (fileCallback != null) {
-                        fileCallback.onReceiveValue(null);
-                    }
-
-                    fileCallback = callback;
-
-                    try {
-                        startActivityForResult(
-                            params.createIntent(), 1001
-                        );
-                        return true;
-                    } catch (Exception e) {
-                        fileCallback = null;
-                        return false;
-                    }
-                }
-            }
-        );
-
-        webView.setWebViewClient(
-            new WebViewClient() {
-
-                @Override
-                public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    WebResourceRequest request) {
-
-                    Uri uri = request.getUrl();
-                    String scheme = uri.getScheme();
-                    String host = uri.getHost();
-
-                    if ("https".equals(scheme)
-                            && host != null
-                            && (host.equals("accounts.google.com")
-                            || host.equals("oauth2.googleapis.com"))) {
-
-                        openBrowser(uri.toString());
-                        return true;
-                    }
-
-                    if ("http".equals(scheme)
-                            || "https".equals(scheme)
-                            || "file".equals(scheme)) {
-                        return false;
-                    }
-
-                    try {
-                        startActivity(new Intent(
-                            Intent.ACTION_VIEW, uri
-                        ));
-                    } catch (Exception e) {
-                        Toast.makeText(
-                            MainActivity.this,
-                            "लिंक नहीं खुल पाया",
-                            Toast.LENGTH_SHORT
-                        ).show();
-                    }
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(true);
+        s.setSupportMultipleWindows(true);
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.addJavascriptInterface(new ReminderBridge(this), "ChronicleAndroid");
+        webView.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if ("file".equals(uri.getScheme()) || "about".equals(uri.getScheme())) return false;
+                if ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch(Exception ignored) {}
                     return true;
                 }
+                return false;
             }
-        );
-
-        webView.loadUrl(HOME);
-    }
-
-    private void openBrowser(String url) {
-        try {
-            Intent intent = new Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse(url)
-            );
-            startActivity(intent);
-        } catch (Exception e) {
-            Toast.makeText(
-                this,
-                "ब्राउज़र नहीं खुल पाया",
-                Toast.LENGTH_SHORT
-            ).show();
+        });
+        webView.loadUrl("file:///android_asset/index.html");
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
         }
     }
-
-    public class ChronicleBridge {
-
-        @JavascriptInterface
-        public void openGoogleLogin() {
-            runOnUiThread(() ->
-                openBrowser(LOGIN_URL)
-            );
-        }
-    }
-
-    @Override
-    protected void onActivityResult(
-        int requestCode,
-        int resultCode,
-        Intent data) {
-
-        super.onActivityResult(
-            requestCode, resultCode, data
-        );
-
-        if (requestCode == 1001
-                && fileCallback != null) {
-
-            Uri[] result =
-                WebChromeClient.FileChooserParams
-                    .parseResult(resultCode, data);
-
-            fileCallback.onReceiveValue(result);
-            fileCallback = null;
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            webView.removeJavascriptInterface(
-                "ChronicleAndroid"
-            );
-            webView.destroy();
-        }
-        super.onDestroy();
+    @Override public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 }
