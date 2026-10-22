@@ -596,6 +596,12 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
           <button class="btn btn-sm btn-danger" id="btn-remove-pin" style="display:none;" onclick="disablePin()">Remove PIN</button>
         </div>
       </div>
+      <div class="card" style="margin-top:14px;">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;">👤 Account / अकाउंट</h3>
+        <p id="settings-logout-status" style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;" role="status">अकाउंट की स्थिति जाँची जा रही है…</p>
+        <button type="button" class="btn btn-danger btn-sm" id="settings-logout-btn" disabled>🚪 Logout / लॉगआउट</button>
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:10px;">लॉगआउट से आपका Firebase अकाउंट साइन आउट होगा। डायरी की एंट्री और रिमाइंडर डिलीट नहीं होंगे।</p>
+      </div>
     </div>
   </div>
 
@@ -1560,6 +1566,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     }
     function requestReminderNotifications() {
       var status = document.getElementById('rem-notification-status');
+      if (window.ChronicleAndroid) { if(status) status.textContent = 'Native Android Alarm उपलब्ध है; Exact Alarm अनुमति जाँचें।'; try{window.ChronicleAndroid.openAlarmSettings();}catch(e){} return; }
       if (!('Notification' in window) || !window.isSecureContext) { if(status) status.textContent = 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं। पेज खुला होने पर रिमाइंडर की घंटी बजेगी।'; return; }
       if (Notification.permission === 'granted') { if(status) status.textContent = 'चालू हैं ✓'; showToast('Reminder notifications are already enabled'); return; }
       Promise.resolve(Notification.requestPermission()).then(function(result) {
@@ -1595,7 +1602,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
         showToast('⏰ Reminder: '+r.title);
       });
     }
-    if (!alarmTicker) alarmTicker=setInterval(function(){checkReminderAlarms();},5000);
+    if (!window.ChronicleAndroid && !alarmTicker) alarmTicker=setInterval(function(){checkReminderAlarms();},5000);
 
     // --- REMINDERS ---
     var editingReminderId = null;
@@ -2337,10 +2344,31 @@ const firebaseConfig = {
         showCloudError(error);
       }
     }
+    const settingsLogoutButton = document.getElementById("settings-logout-btn");
+    const settingsLogoutStatus = document.getElementById("settings-logout-status");
+    if (settingsLogoutButton) settingsLogoutButton.addEventListener("click", async () => {
+      if (!auth.currentUser || settingsLogoutButton.disabled) return;
+      if (!window.confirm("क्या आप Chronicle अकाउंट से लॉगआउट करना चाहते हैं? आपकी डायरी और रिमाइंडर डिलीट नहीं होंगे।")) return;
+      settingsLogoutButton.disabled = true;
+      settingsLogoutStatus.textContent = "लॉगआउट हो रहा है…";
+      try {
+        await persistenceReady;
+        syncReady = false;
+        await signOut(auth);
+        settingsLogoutStatus.textContent = "लॉगआउट सफल।";
+      } catch (error) {
+        console.error("Settings logout failed:", error);
+        syncReady = !!auth.currentUser;
+        settingsLogoutStatus.textContent = "लॉगआउट नहीं हुआ। कृपया दोबारा कोशिश करें।";
+        settingsLogoutButton.disabled = !auth.currentUser;
+      }
+    });
     onAuthStateChanged(auth, function(user) {
       syncReady = false;
       activeUid = user ? user.uid : null;
       cloudNotice.style.display = "none";
+      if (settingsLogoutButton) settingsLogoutButton.disabled = !user;
+      if (settingsLogoutStatus) settingsLogoutStatus.textContent = user ? ("लॉगिन: " + (user.email || "Firebase अकाउंट")) : "अभी कोई अकाउंट लॉगिन नहीं है।";
       if (loginButton) loginButton.textContent = user ? "🚪 Logout" : "🔐 Google Login";
       if (userStatus) userStatus.textContent = user ? "Loading cloud…" : "";
       window.dispatchEvent(new CustomEvent("chronicle-auth-state", {detail:{loggedIn:!!user}}));
@@ -2465,6 +2493,18 @@ const firebaseConfig = {
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateNotificationUI);
   else updateNotificationUI();
+})();
+</script>
+<script>
+(function(){
+ function syncNative(){
+   if(!window.ChronicleAndroid || typeof window.ChronicleAndroid.sync!=='function')return;
+   try { var data=JSON.parse(localStorage.getItem('chr_reminders')||'[]'); if(Array.isArray(data)) window.ChronicleAndroid.sync(JSON.stringify(data)); } catch(e){console.warn('Native reminder sync:',e);}
+ }
+ window.addEventListener('chronicle-local-data-changed',function(e){if(e.detail&&e.detail.key==='reminders')syncNative();});
+ window.addEventListener('load',function(){setTimeout(syncNative,1200);});
+ document.addEventListener('visibilitychange',function(){if(!document.hidden)syncNative();});
+ window.chronicleSyncNativeReminders=syncNative;
 })();
 </script>
 </body></html>
