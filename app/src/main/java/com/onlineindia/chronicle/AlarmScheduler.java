@@ -19,7 +19,7 @@ public final class AlarmScheduler {
  static synchronized String schedule(Context c,JSONObject r){String id=r.optString("id");if(id.isEmpty())return "INVALID_ID";cancelPending(c,id);if(r.optBoolean("isCompleted",false))return "COMPLETED";
  long when=next(r,System.currentTimeMillis());if(when<0)return "NO_FUTURE_OCCURRENCE";
  AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return "NO_ALARM_MANAGER";
- try{PendingIntent pi=pending(c,id);Intent show=new Intent(c,MainActivity.class);PendingIntent display=PendingIntent.getActivity(c,0,show,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+ try{PendingIntent pi=pending(c,id);Intent show=new Intent(c,MainActivity.class).setData(Uri.parse("chronicle://view/"+Uri.encode(id)));PendingIntent display=PendingIntent.getActivity(c,id.hashCode(),show,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
  if(Build.VERSION.SDK_INT>=31&&!am.canScheduleExactAlarms())return "EXACT_ALARM_PERMISSION_REQUIRED";
  am.setAlarmClock(new AlarmManager.AlarmClockInfo(when,display),pi);return "SCHEDULED";
  }catch(SecurityException e){return "EXACT_ALARM_PERMISSION_REQUIRED";}catch(Exception e){return "ERROR";}}
