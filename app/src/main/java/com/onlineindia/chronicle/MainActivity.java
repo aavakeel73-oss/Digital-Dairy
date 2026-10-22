@@ -1,219 +1,178 @@
 
 package com.onlineindia.chronicle;
 
-import android.Manifest;
 import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.Insets;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import android.view.WindowManager;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
+import android.content.Intent;
+import android.net.Uri;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebResourceRequest;
+import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.CookieManager;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
     private WebView webView;
-    private FrameLayout root;
+    private ValueCallback<Uri[]> fileCallback;
 
-    private static final int BG =
-            Color.rgb(250, 249, 246);
+    private static final String HOME =
+        "file:///android_asset/index.html";
 
-    private static final int NOTIFICATION_REQUEST = 101;
+    private static final String LOGIN_URL =
+        "https://chronicle-diary-23cb2.web.app/";
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        configureSystemBars();
-
-        root = new FrameLayout(this);
-        root.setBackgroundColor(BG);
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
 
         webView = new WebView(this);
-        webView.setBackgroundColor(BG);
-
-        root.addView(webView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                ));
-
-        setContentView(root);
-
-        configureInsets();
-        configureWebView();
-        requestNotificationPermission();
-    }
-
-    private void configureSystemBars() {
-
-        Window window = getWindow();
-
-        window.clearFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-        );
-
-        window.addFlags(
-                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
-        );
-
-        window.getDecorView().setBackgroundColor(BG);
-
-        if (Build.VERSION.SDK_INT < 35) {
-            window.setStatusBarColor(BG);
-            window.setNavigationBarColor(BG);
-        }
-
-        if (Build.VERSION.SDK_INT >= 30) {
-
-            WindowInsetsController controller =
-                    window.getInsetsController();
-
-            if (controller != null) {
-
-                controller.setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                );
-            }
-
-        } else {
-
-            int flags = 0;
-
-            if (Build.VERSION.SDK_INT >= 23) {
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            }
-
-            if (Build.VERSION.SDK_INT >= 26) {
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-            }
-
-            window.getDecorView().setSystemUiVisibility(flags);
-        }
-    }
-
-    private void configureInsets() {
-
-        if (Build.VERSION.SDK_INT >= 35) {
-
-            root.setOnApplyWindowInsetsListener(
-                    (view, insets) -> {
-
-                        Insets bars = insets.getInsets(
-                                WindowInsets.Type.systemBars()
-                                | WindowInsets.Type.displayCutout()
-                        );
-
-                        root.setPadding(
-                                bars.left,
-                                bars.top,
-                                bars.right,
-                                bars.bottom
-                        );
-
-                        return insets;
-                    }
-            );
-
-            root.requestApplyInsets();
-        }
-    }
-
-    private void configureWebView() {
+        setContentView(webView);
 
         WebSettings settings = webView.getSettings();
-
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-
         settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(false);
-
+        settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
 
-        webView.setWebChromeClient(new WebChromeClient());
+        CookieManager.getInstance()
+            .setAcceptCookie(true);
 
         webView.addJavascriptInterface(
-                new ReminderBridge(this),
-                "ChronicleAndroid"
+            new ChronicleBridge(),
+            "ChronicleAndroid"
         );
 
-        webView.setWebViewClient(new WebViewClient() {
+        webView.setWebChromeClient(
+            new WebChromeClient() {
 
-            @Override
-            public boolean shouldOverrideUrlLoading(
+                @Override
+                public boolean onShowFileChooser(
+                    WebView view,
+                    ValueCallback<Uri[]> callback,
+                    FileChooserParams params) {
+
+                    if (fileCallback != null) {
+                        fileCallback.onReceiveValue(null);
+                    }
+
+                    fileCallback = callback;
+
+                    try {
+                        startActivityForResult(
+                            params.createIntent(), 1001
+                        );
+                        return true;
+                    } catch (Exception e) {
+                        fileCallback = null;
+                        return false;
+                    }
+                }
+            }
+        );
+
+        webView.setWebViewClient(
+            new WebViewClient() {
+
+                @Override
+                public boolean shouldOverrideUrlLoading(
                     WebView view,
                     WebResourceRequest request) {
 
-                Uri uri = request.getUrl();
-                String scheme = uri.getScheme();
+                    Uri uri = request.getUrl();
+                    String scheme = uri.getScheme();
+                    String host = uri.getHost();
 
-                if ("file".equals(scheme)
-                        || "about".equals(scheme)) {
-                    return false;
-                }
+                    if ("https".equals(scheme)
+                            && host != null
+                            && (host.equals("accounts.google.com")
+                            || host.equals("oauth2.googleapis.com"))) {
 
-                if ("https".equals(scheme)
-                        || "http".equals(scheme)) {
-
-                    try {
-                        Intent intent = new Intent(
-                                Intent.ACTION_VIEW, uri
-                        );
-                        startActivity(intent);
-                    } catch (Exception ignored) {
+                        openBrowser(uri.toString());
+                        return true;
                     }
 
+                    if ("http".equals(scheme)
+                            || "https".equals(scheme)
+                            || "file".equals(scheme)) {
+                        return false;
+                    }
+
+                    try {
+                        startActivity(new Intent(
+                            Intent.ACTION_VIEW, uri
+                        ));
+                    } catch (Exception e) {
+                        Toast.makeText(
+                            MainActivity.this,
+                            "लिंक नहीं खुल पाया",
+                            Toast.LENGTH_SHORT
+                        ).show();
+                    }
                     return true;
                 }
-
-                return true;
             }
-        });
-
-        webView.loadUrl(
-                "file:///android_asset/index.html"
         );
+
+        webView.loadUrl(HOME);
     }
 
-    private void requestNotificationPermission() {
+    private void openBrowser(String url) {
+        try {
+            Intent intent = new Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(url)
+            );
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(
+                this,
+                "ब्राउज़र नहीं खुल पाया",
+                Toast.LENGTH_SHORT
+            ).show();
+        }
+    }
 
-        if (Build.VERSION.SDK_INT >= 33) {
+    public class ChronicleBridge {
 
-            if (checkSelfPermission(
-                    Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED) {
+        @JavascriptInterface
+        public void openGoogleLogin() {
+            runOnUiThread(() ->
+                openBrowser(LOGIN_URL)
+            );
+        }
+    }
 
-                requestPermissions(
-                        new String[]{
-                                Manifest.permission.POST_NOTIFICATIONS
-                        },
-                        NOTIFICATION_REQUEST
-                );
-            }
+    @Override
+    protected void onActivityResult(
+        int requestCode,
+        int resultCode,
+        Intent data) {
+
+        super.onActivityResult(
+            requestCode, resultCode, data
+        );
+
+        if (requestCode == 1001
+                && fileCallback != null) {
+
+            Uri[] result =
+                WebChromeClient.FileChooserParams
+                    .parseResult(resultCode, data);
+
+            fileCallback.onReceiveValue(result);
+            fileCallback = null;
         }
     }
 
     @Override
     public void onBackPressed() {
-
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
@@ -223,15 +182,12 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-
         if (webView != null) {
             webView.removeJavascriptInterface(
-                    "ChronicleAndroid"
+                "ChronicleAndroid"
             );
             webView.destroy();
-            webView = null;
         }
-
         super.onDestroy();
     }
 }
