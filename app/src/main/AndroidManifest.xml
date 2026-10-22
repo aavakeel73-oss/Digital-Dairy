@@ -1,42 +1,27 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Internet Permission -->
-    <uses-permission
-        android:name="android.permission.INTERNET" />
-
-    <!-- Notification Permission -->
-    <uses-permission
-        android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Reminder Alarm Permission -->
-    <uses-permission
-        android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:label="Chronicle"
+        android:icon="@drawable/chronicle_logo"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:usesCleartextTraffic="false"
-        android:allowBackup="false"
-        android:supportsRtl="true">
+        android:usesCleartextTraffic="true">
 
-        <!-- Main Activity -->
         <activity
             android:name="com.onlineindia.chronicle.MainActivity"
             android:exported="true">
 
             <intent-filter>
-                <action
-                    android:name="android.intent.action.MAIN" />
-
-                <category
-                    android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
         </activity>
 
-        <!-- Reminder Receiver -->
         <receiver
             android:name="com.onlineindia.chronicle.ReminderReceiver"
             android:enabled="true"
