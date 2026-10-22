@@ -1608,7 +1608,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     var editingReminderId = null;
     function renderRemindersView() {
       var nstatus = document.getElementById('rem-notification-status');
-      if (nstatus) nstatus.textContent = (!('Notification' in window) || !window.isSecureContext) ? 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : (Notification.permission === 'denied' ? 'ब्राउज़र सेटिंग में अनुमति दें' : 'अभी बंद हैं')); 
+      if (nstatus) nstatus.textContent = window.ChronicleAndroid ? ('Native Android Alarm: ' + (window.ChronicleAndroid.permissionStatus() === 'ALLOWED' ? 'अनुमति चालू ✓' : 'Exact Alarm अनुमति आवश्यक — ऊपर बटन दबाएँ')) : ((!('Notification' in window) || !window.isSecureContext) ? 'इस ब्राउज़र में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : 'नोटिफिकेशन अनुमति आवश्यक')); 
       var feed = document.getElementById('reminders-feed');
       feed.innerHTML = '';
       if (reminders.length === 0) {
@@ -2326,6 +2326,7 @@ const firebaseConfig = {
         localStorage.setItem("chr_journals", JSON.stringify(window.journals));
         localStorage.setItem("chr_notes", JSON.stringify(window.notes));
         localStorage.setItem("chr_reminders", JSON.stringify(window.reminders));
+        if(typeof window.chronicleSyncNativeReminders === "function")window.chronicleSyncNativeReminders();
         localStorage.setItem("chr_settings", JSON.stringify(window.settings));
 
         if (typeof window.renderDashboard === "function") window.renderDashboard();
@@ -2488,8 +2489,8 @@ const firebaseConfig = {
     var button=document.getElementById('rem-notification-button');
     var status=document.getElementById('rem-notification-status');
     var supported=('Notification' in window)&&window.isSecureContext;
-    if(button){button.style.display=supported?'inline-flex':'none';}
-    if(status&&!supported){status.textContent='इस ब्राउज़र/WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं।';}
+    if(button){button.style.display=(supported||!!window.ChronicleAndroid)?'inline-flex':'none'; button.textContent=window.ChronicleAndroid?'⚙️ Alarm अनुमति जाँचें':'नोटिफिकेशन अनुमति जाँचें';}
+    if(status){status.textContent=window.ChronicleAndroid ? ('Native Android Alarm: '+(window.ChronicleAndroid.permissionStatus()==='ALLOWED'?'अनुमति चालू ✓':'Exact Alarm अनुमति आवश्यक')) : (!supported?'इस ब्राउज़र/WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं।':status.textContent);}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateNotificationUI);
   else updateNotificationUI();
@@ -2502,7 +2503,7 @@ const firebaseConfig = {
    try { var data=JSON.parse(localStorage.getItem('chr_reminders')||'[]'); if(Array.isArray(data)) window.ChronicleAndroid.sync(JSON.stringify(data)); } catch(e){console.warn('Native reminder sync:',e);}
  }
  window.addEventListener('chronicle-local-data-changed',function(e){if(e.detail&&e.detail.key==='reminders')syncNative();});
- window.addEventListener('load',function(){setTimeout(syncNative,1200);});
+ window.addEventListener('load',function(){setTimeout(function(){if(localStorage.getItem('chr_reminders')!==null)syncNative();},1200);});
  document.addEventListener('visibilitychange',function(){if(!document.hidden)syncNative();});
  window.chronicleSyncNativeReminders=syncNative;
 })();
