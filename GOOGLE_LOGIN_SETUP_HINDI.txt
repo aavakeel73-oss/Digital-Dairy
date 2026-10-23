@@ -1,0 +1,21 @@
+CHRONICLE — GOOGLE LOGIN + ORIGINAL LOGO
+
+Changes:
+- Original green Chronicle Diary artwork added to Android mipmap launcher icon sizes.
+- AndroidManifest.xml references mipmap/ic_launcher and roundIcon.
+- Native Google account chooser added to MainActivity.java using Google Play Services.
+- WebView Firebase Google login uses Google ID token + signInWithCredential; email/password and existing Firestore flow retained.
+- Removes misleading duplicate files from source archive.
+
+REQUIRED FIREBASE CONFIGURATION (cannot be done just by editing APK):
+1. Firebase Console > Authentication > Sign-in method > enable Google provider.
+2. Firebase Console > Project Settings > Your apps > Android app com.onlineindia.chronicle.
+3. Add SHA-1 and SHA-256 for the ACTUAL signing certificate of your APK (GitHub Actions debug signing key changes if regenerated).
+4. Download updated google-services.json if Firebase config changes and replace app/google-services.json.
+5. Keep the same package name and signing key to upgrade an installed APK.
+6. Android Google Play Services must be available.
+
+NOTE: GoogleSignInClient is a legacy API but remains supported; migration to Credential Manager is recommended later.
+No Android SDK build or real Google OAuth login test was performed in this environment.
+
+For stable GitHub debug signatures, use a protected, persistent keystore in GitHub Secrets; otherwise Firebase SHA fingerprint changes between ephemeral runners. Never commit the keystore or password to the public repository.
