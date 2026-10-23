@@ -565,6 +565,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
       </div>
       <div class="card" style="background:var(--accent-soft);">
         <strong>🔔 Reminder notifications</strong>
+        <p style="font-size:.78rem;margin:5px 0 10px;">पेज खुला रहने पर निर्धारित समय पर घंटी बजेगी। सिस्टम नोटिफिकेशन केवल समर्थित ब्राउज़र और अनुमति मिलने पर दिखेंगे। ऐप बंद होने पर अलार्म की गारंटी नहीं है।</p>
         <button class="btn btn-sm" type="button" id="rem-notification-button" onclick="requestReminderNotifications()">नोटिफिकेशन अनुमति जाँचें</button>
         <span id="rem-notification-status" style="font-size:.75rem;margin-left:8px;"></span>
       </div>
@@ -1607,7 +1608,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     var editingReminderId = null;
     function renderRemindersView() {
       var nstatus = document.getElementById('rem-notification-status');
-      if (nstatus) nstatus.textContent = window.ChronicleAndroid ? ('Native Android Alarm: ' + (window.ChronicleAndroid.permissionStatus() === 'ALLOWED' ? 'अनुमति चालू ✓' : 'Exact Alarm अनुमति आवश्यक — ऊपर बटन दबाएँ')) : ((!('Notification' in window) || !window.isSecureContext) ? 'इस ब्राउज़र में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : 'नोटिफिकेशन अनुमति आवश्यक')); 
+      if (nstatus) nstatus.textContent = (!('Notification' in window) || !window.isSecureContext) ? 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : (Notification.permission === 'denied' ? 'ब्राउज़र सेटिंग में अनुमति दें' : 'अभी बंद हैं')); 
       var feed = document.getElementById('reminders-feed');
       feed.innerHTML = '';
       if (reminders.length === 0) {
@@ -2010,7 +2011,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence,
+      getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence,
       createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
     import {
@@ -2131,6 +2132,25 @@ const firebaseConfig = {
     });
 
     let loginRequestInProgress = false;
+    // Native Google account chooser: use Android Google Sign-In, then Firebase Web
+    // signInWithCredential to retain the existing Firestore sync and auth UI.
+    window.addEventListener("chronicle-native-google-result", async (event) => {
+      const detail = event.detail || {};
+      try {
+        if (detail.error) throw new Error(detail.error);
+        if (!detail.token) throw new Error("Google ID token नहीं मिला।");
+        await persistenceReady;
+        const credential = GoogleAuthProvider.credential(detail.token);
+        await signInWithCredential(auth, credential);
+      } catch (error) {
+        console.error("Native Google Firebase sign-in failed:", error);
+        alert("Google Login नहीं हो पाया: " + (error.message || String(error)));
+      } finally {
+        loginRequestInProgress = false;
+        if (loginButton) loginButton.disabled = false;
+      }
+    });
+
     window.chronicleGoogleLogin = async function () {
       // Prevent rapid/double taps from starting overlapping authentication requests.
       if (loginRequestInProgress) return;
@@ -2138,6 +2158,15 @@ const firebaseConfig = {
       if (loginButton) loginButton.disabled = true;
       try {
         await persistenceReady;
+        if (window.ChronicleGoogleNative && typeof window.ChronicleGoogleNative.start === "function") {
+          if (auth.currentUser) {
+            syncReady = false;
+            await signOut(auth);
+            return;
+          }
+          window.ChronicleGoogleNative.start();
+          return;
+        }
         if (auth.currentUser) {
           syncReady = false;
           await signOut(auth);
@@ -2325,7 +2354,6 @@ const firebaseConfig = {
         localStorage.setItem("chr_journals", JSON.stringify(window.journals));
         localStorage.setItem("chr_notes", JSON.stringify(window.notes));
         localStorage.setItem("chr_reminders", JSON.stringify(window.reminders));
-        if(typeof window.chronicleSyncNativeReminders === "function")window.chronicleSyncNativeReminders();
         localStorage.setItem("chr_settings", JSON.stringify(window.settings));
 
         if (typeof window.renderDashboard === "function") window.renderDashboard();
@@ -2488,8 +2516,8 @@ const firebaseConfig = {
     var button=document.getElementById('rem-notification-button');
     var status=document.getElementById('rem-notification-status');
     var supported=('Notification' in window)&&window.isSecureContext;
-    if(button){button.style.display=(supported||!!window.ChronicleAndroid)?'inline-flex':'none'; button.textContent=window.ChronicleAndroid?'⚙️ Alarm अनुमति जाँचें':'नोटिफिकेशन अनुमति जाँचें';}
-    if(status){status.textContent=window.ChronicleAndroid ? ('Native Android Alarm: '+(window.ChronicleAndroid.permissionStatus()==='ALLOWED'?'अनुमति चालू ✓':'Exact Alarm अनुमति आवश्यक')) : (!supported?'इस ब्राउज़र/WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं।':status.textContent);}
+    if(button){button.style.display=supported?'inline-flex':'none';}
+    if(status&&!supported){status.textContent='इस ब्राउज़र/WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं।';}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',updateNotificationUI);
   else updateNotificationUI();
@@ -2502,7 +2530,7 @@ const firebaseConfig = {
    try { var data=JSON.parse(localStorage.getItem('chr_reminders')||'[]'); if(Array.isArray(data)) window.ChronicleAndroid.sync(JSON.stringify(data)); } catch(e){console.warn('Native reminder sync:',e);}
  }
  window.addEventListener('chronicle-local-data-changed',function(e){if(e.detail&&e.detail.key==='reminders')syncNative();});
- window.addEventListener('load',function(){setTimeout(function(){if(localStorage.getItem('chr_reminders')!==null)syncNative();},1200);});
+ window.addEventListener('load',function(){setTimeout(syncNative,1200);});
  document.addEventListener('visibilitychange',function(){if(!document.hidden)syncNative();});
  window.chronicleSyncNativeReminders=syncNative;
 })();
