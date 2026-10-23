@@ -9,7 +9,12 @@ android {
         minSdk 23
         targetSdk 35
         versionCode 2
-versionName '1.1'
-        
+        versionName '1.1'
     }
+}
+
+
+dependencies {
+    // Native Google account chooser. Firebase sign-in is completed in existing WebView JS.
+    implementation 'com.google.android.gms:play-services-auth:21.3.0'
 }
