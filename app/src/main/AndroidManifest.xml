@@ -28,8 +28,8 @@
     <application
         android:allowBackup="true"
         android:label="Chronicle Diary"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@android:drawable/ic_menu_edit"
+android:roundIcon="@android:drawable/ic_menu_edit"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="true">
 
