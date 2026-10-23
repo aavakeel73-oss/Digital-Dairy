@@ -166,7 +166,7 @@
       border-radius: 8px;
       min-width: 54px;
     }
-    .nav-btn.active { color: var(--accent); font-weight: 700; }
+    .nav-btn.active { color: var(--accent); font-weight: 800; background: var(--accent-soft); outline: 1px solid var(--accent); }
     .nav-btn svg { width: 18px; height: 18px; }
 
     /* Form controls */
@@ -563,12 +563,6 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
         <h1 style="font-size: 1.3rem; font-weight: 700;">Reminders</h1>
         <button class="btn btn-primary btn-sm" onclick="openReminderModal()">+ New Reminder</button>
       </div>
-      <div class="card" style="background:var(--accent-soft);">
-        <strong>🔔 Reminder notifications</strong>
-        <p style="font-size:.78rem;margin:5px 0 10px;">पेज खुला रहने पर निर्धारित समय पर घंटी बजेगी। सिस्टम नोटिफिकेशन केवल समर्थित ब्राउज़र और अनुमति मिलने पर दिखेंगे। ऐप बंद होने पर अलार्म की गारंटी नहीं है।</p>
-        <button class="btn btn-sm" type="button" id="rem-notification-button" onclick="requestReminderNotifications()">नोटिफिकेशन अनुमति जाँचें</button>
-        <span id="rem-notification-status" style="font-size:.75rem;margin-left:8px;"></span>
-      </div>
 
       <!-- Daily Ritual Card -->
       <div class="card">
@@ -931,6 +925,15 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
       if (n) copyToClipboard(n.content, 'Copied note to clipboard!');
     }
 
+    // Android Back: fixed sequence Remind → Notes → Entries → Diary.
+    window.chronicleHandleBack = function() {
+      var current = document.querySelector('.view-panel.active');
+      var id = current ? current.id.replace('view-', '') : 'dashboard';
+      var previous = { reminders:'notes', notes:'journal', journal:'dashboard', alarm:'reminders', settings:'reminders' }[id];
+      if (!previous) return false;
+      switchView(previous);
+      return true;
+    };
     function switchView(tab) {
       document.querySelectorAll('.view-panel').forEach(function(p) { p.classList.remove('active'); });
       document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -1608,7 +1611,7 @@ window.addEventListener('chronicle-auth-state',function(e){var gate=document.get
     var editingReminderId = null;
     function renderRemindersView() {
       var nstatus = document.getElementById('rem-notification-status');
-      if (nstatus) nstatus.textContent = (!('Notification' in window) || !window.isSecureContext) ? 'इस WebView में सिस्टम नोटिफिकेशन उपलब्ध नहीं हैं; पेज खुला रखें।' : (Notification.permission === 'granted' ? 'चालू हैं ✓' : (Notification.permission === 'denied' ? 'ब्राउज़र सेटिंग में अनुमति दें' : 'अभी बंद हैं')); 
+      if (nstatus) nstatus.textContent = '';  
       var feed = document.getElementById('reminders-feed');
       feed.innerHTML = '';
       if (reminders.length === 0) {
