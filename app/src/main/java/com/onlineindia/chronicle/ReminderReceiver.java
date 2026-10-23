@@ -15,7 +15,7 @@ public class ReminderReceiver extends android.content.BroadcastReceiver {
  .setContentIntent(full).setFullScreenIntent(full,true).addAction(android.R.drawable.ic_menu_close_clear_cancel,"Stop",stopPi);
  if(Build.VERSION.SDK_INT<26)b.setPriority(Notification.PRIORITY_HIGH).setDefaults(Notification.DEFAULT_ALL);
  if(Build.VERSION.SDK_INT<33||c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED){((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).notify(id.hashCode(),b.build());}
- // Android 10+ forbids arbitrary background activity launches. The full-screen notification is the supported path.
+ try{c.startActivity(alarm);}catch(Exception ignored){}
  // Only reschedule after the currently due occurrence, so recurring alarms survive a process death.
  if(!"none".equals(r.optString("repeat","none")))AlarmScheduler.schedule(c,r);
  }

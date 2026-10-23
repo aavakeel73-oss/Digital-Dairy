@@ -18,6 +18,47 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 
 public class MainActivity extends Activity {
+    private static final int GOOGLE_SIGN_IN_REQUEST = 9007;
+    private final android.os.Handler uiHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final class GoogleLoginBridge {
+        @android.webkit.JavascriptInterface public void start() {
+            uiHandler.post(() -> startNativeGoogleLogin());
+        }
+    }
+    private void startNativeGoogleLogin() {
+        // Firebase project Web OAuth client ID (client_type=3), NOT Android OAuth client.
+        String webClientId = "791391618508-jkrpk0agnbnqoinkcn3uc37f9bsqhivi.apps.googleusercontent.com";
+        com.google.android.gms.auth.api.signin.GoogleSignInOptions options =
+            new com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(webClientId).requestEmail().build();
+        com.google.android.gms.auth.api.signin.GoogleSignInClient client =
+            com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(this, options);
+        client.signOut().addOnCompleteListener(this, task ->
+            startActivityForResult(client.getSignInIntent(), GOOGLE_SIGN_IN_REQUEST));
+    }
+    private void deliverGoogleResult(String token, String error) {
+        try {
+            String script = "window.dispatchEvent(new CustomEvent('chronicle-native-google-result',{detail:{token:"+
+                org.json.JSONObject.quote(token == null ? "" : token)+",error:"+
+                org.json.JSONObject.quote(error == null ? "" : error)+"}}));";
+            webView.evaluateJavascript(script, null);
+        } catch (Exception ignored) { }
+    }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != GOOGLE_SIGN_IN_REQUEST) return;
+        try {
+            com.google.android.gms.tasks.Task<com.google.android.gms.auth.api.signin.GoogleSignInAccount> task =
+                com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(data);
+            String token = task.getResult(com.google.android.gms.common.api.ApiException.class).getIdToken();
+            if (token == null || token.isEmpty()) deliverGoogleResult(null, "Google ID token नहीं मिला। Firebase SHA-1 और OAuth configuration जाँचें।");
+            else deliverGoogleResult(token, null);
+        } catch (com.google.android.gms.common.api.ApiException ex) {
+            deliverGoogleResult(null, "Google Sign-In error " + ex.getStatusCode() + ". SHA-1, package name और Firebase OAuth सेटिंग जाँचें।");
+        }
+    }
+
     private WebView webView;
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +88,7 @@ public class MainActivity extends Activity {
         s.setSupportMultipleWindows(true);
         webView.setWebChromeClient(new WebChromeClient());
         webView.addJavascriptInterface(new ReminderBridge(this), "ChronicleAndroid");
+        webView.addJavascriptInterface(new GoogleLoginBridge(), "ChronicleGoogleNative");
         webView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
